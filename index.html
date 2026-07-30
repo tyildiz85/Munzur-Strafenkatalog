@@ -286,6 +286,44 @@
   .fine-entry.bonus{border-color:var(--sage); background:rgba(76,154,114,.08);}
   .fine-entry.bonus .amt{color:var(--sage-bright);}
   .ptotal.credit{color:var(--sage-bright);}
+  .badge-vorbild{
+    font-family:'Oswald'; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px;
+    padding:2px 6px; border-radius:5px; margin-left:6px; display:inline-block;
+  }
+  .badge-vorbild.bronze{background:rgba(205,133,63,.2); color:#e0a870;}
+  .badge-vorbild.silver{background:rgba(192,192,200,.2); color:#d7d9de;}
+  .badge-vorbild.gold{background:rgba(230,199,116,.22); color:var(--gold-bright);}
+
+  /* KALENDER */
+  .cal-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .cal-nav .cal-title{font-family:'Oswald'; font-size:15px; letter-spacing:.5px; color:var(--gold-bright);}
+  .cal-nav button{
+    background:var(--navy-card); border:1px solid var(--navy-line); color:var(--off-white);
+    width:34px; height:34px; border-radius:8px; font-size:15px; cursor:pointer;
+  }
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+  .cal-dow{text-align:center; font-family:'Oswald'; font-size:10px; color:var(--off-white-dim); padding-bottom:4px; text-transform:uppercase;}
+  .cal-cell{
+    aspect-ratio:1; border-radius:8px; background:#0e2138; border:1px solid var(--navy-line);
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:4px 2px;
+    font-size:11px; cursor:pointer; position:relative; min-height:44px;
+  }
+  .cal-cell.empty{background:transparent; border:none; cursor:default;}
+  .cal-cell.today{border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold);}
+  .cal-cell.selected{background:rgba(201,162,75,.18); border-color:var(--gold);}
+  .cal-daynum{font-family:'Space Mono'; font-weight:700; color:var(--off-white-dim);}
+  .cal-dots{display:flex; gap:2px; margin-top:2px; flex-wrap:wrap; justify-content:center;}
+  .cal-dot{width:6px; height:6px; border-radius:50%;}
+  .cal-dot.absence{background:var(--sage-bright);}
+  .cal-dot.game{background:var(--crimson-bright);}
+  .cal-dot.training{background:var(--gold-bright);}
+  .cal-daydetail{margin-top:12px; padding:10px 12px; background:#0e2138; border:1px solid var(--navy-line); border-radius:10px; font-size:12.5px;}
+  .agenda-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:8px 0; border-bottom:1px dashed var(--navy-line); font-size:12.5px;
+  }
+  .agenda-item:last-child{border-bottom:none;}
+  .agenda-item .del{color:var(--off-white-dim); cursor:pointer; font-size:11px; text-decoration:underline;}
   .badge-storniert{
     font-family:'Oswald'; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px;
     background:rgba(255,255,255,.12); color:var(--off-white-dim); padding:2px 6px; border-radius:5px; margin-left:6px;
@@ -368,6 +406,7 @@
     <div class="menu-dropdown" id="menuDropdown">
       <div class="menu-item" data-tab="historie">📜 Historie</div>
       <div class="menu-item" data-tab="statistik">📊 Statistik</div>
+      <div class="menu-item" data-tab="kalender">🗓 Kalender</div>
     </div>
   </div>
 
@@ -479,6 +518,8 @@
       <input type="month" id="bonusMonth">
       <label>Betrag der Gutschrift (€)</label>
       <input type="number" id="bonusAmount" step="0.5" min="0" value="10">
+      <label>Grund (optional)</label>
+      <input type="text" id="bonusReason" placeholder="z. B. vorbildliches Verhalten im Training …">
       <label>Erfasst von <span style="color:var(--crimson-bright)">*</span></label>
       <select id="bonusRecordedBy">
         <option value="">— bitte wählen —</option>
@@ -542,6 +583,7 @@
     <div class="card">
       <h2>🏅 Vorbildspieler-Boni</h2>
       <div class="note" style="margin-top:0;" id="statBonusLine">Noch keine Boni vergeben.</div>
+      <div id="statBonusRanking" style="margin-top:10px;"></div>
     </div>
     <div class="card">
       <h2>Strafen nach Kategorie</h2>
@@ -550,6 +592,55 @@
     <div class="card">
       <h2>Längste Trainingsserie aktuell</h2>
       <div id="statStreaks"></div>
+    </div>
+  </div>
+
+  <!-- ================= KALENDER ================= -->
+  <div class="panel" id="panel-kalender">
+    <div class="card">
+      <div class="cal-nav">
+        <button id="calPrev" type="button">‹</button>
+        <div class="cal-title" id="calTitle">—</div>
+        <button id="calNext" type="button">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="note" style="margin-top:10px;"><span class="cal-dot training" style="display:inline-block;"></span> Training &nbsp; <span class="cal-dot game" style="display:inline-block;"></span> Spiel &nbsp; <span class="cal-dot absence" style="display:inline-block;"></span> Abwesenheit — auf einen Tag tippen für Details.</div>
+      <div class="cal-daydetail" id="calDayDetail" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>🏖 Abwesenheit eintragen</h2>
+      <div class="note" style="margin-top:0;">Für Urlaub, Verletzung oder sonstige geplante Abwesenheit — kannst du selbst eintragen.</div>
+      <label>Spieler</label>
+      <select id="absPlayer"></select>
+      <label>Von</label>
+      <input type="date" id="absFrom">
+      <label>Bis</label>
+      <input type="date" id="absTo">
+      <label>Grund (optional)</label>
+      <input type="text" id="absReason" placeholder="z. B. Urlaub, Verletzung …">
+      <button class="btn secondary" id="addAbsBtn">Abwesenheit eintragen</button>
+    </div>
+
+    <div class="card">
+      <h2>⚽ Spieltermin eintragen</h2>
+      <label>Datum</label>
+      <input type="date" id="gameDate">
+      <label>Uhrzeit (optional)</label>
+      <input type="time" id="gameTime">
+      <label>Gegner</label>
+      <input type="text" id="gameOpponent" placeholder="z. B. FC Musterstadt">
+      <label>Heim / Auswärts</label>
+      <select id="gameLocation">
+        <option value="Heim">Heim</option>
+        <option value="Auswärts">Auswärts</option>
+      </select>
+      <button class="btn secondary" id="addGameBtn">Spiel eintragen</button>
+    </div>
+
+    <div class="card">
+      <h2>Alle Termine diesen Monat</h2>
+      <div id="calAgenda"></div>
     </div>
   </div>
 
@@ -567,7 +658,7 @@
   </div>
 
   <div class="brand-footer">
-    <div class="brand-tagline">Wiesbadens modernster Amateurfussballverein</div>
+    <div class="brand-tagline">Wiesbadens modernster Amateurfußballverein</div>
     <div class="brand-credit">Munzur Media 2026</div>
   </div>
 </div>
@@ -618,6 +709,51 @@ const PAYMENT_DEADLINE_DAYS = 7; // Zahlungsfrist ab Aussprache der Strafe (dana
 let fines = [];      // {id, player, cat, txt, amt, date, note, paid, cancelled, recordedBy, recordedAt}
 let history = [];    // {id, ts, actor, action, player, amt, ruleTxt, note}
 let training = {sessions: [], attendance: {}}; // attendance[player][sessionDate]=true
+let absences = [];   // {id, player, from, to, reason, recordedAt}
+let games = [];       // {id, date, time, opponent, location} — zusätzlich von Nutzern eingetragene Spiele
+
+// Offizieller Saison-Spielplan 2026/2027 (S.K.C. Munzur Wiesbaden, 1. Mannschaft, Kreisliga A)
+// Fest hinterlegt, erscheint automatisch im Kalender (Stand DFBnet 29.06.2026, ohne Gewähr).
+const SEASON_GAMES = [
+  {id:'season_1', date:'2026-08-09', time:'15:00', opponent:'VfR Wiesbaden', location:'Heim'},
+  {id:'season_2', date:'2026-08-16', time:'15:00', opponent:'FC Albania Mainz-Kastel', location:'Auswärts'},
+  {id:'season_3', date:'2026-08-23', time:'15:00', opponent:'DJK 1. SC Klarenthal', location:'Heim'},
+  {id:'season_4', date:'2026-08-26', time:'19:00', opponent:'SC Polonia Wiesbaden 2018', location:'Auswärts'},
+  {id:'season_5', date:'2026-08-30', time:'12:30', opponent:'SV 1913 Niedernhausen II', location:'Auswärts'},
+  {id:'season_6', date:'2026-09-06', time:'15:00', opponent:'DJK Schwarz-Weiß Wiesb.', location:'Heim'},
+  {id:'season_7', date:'2026-09-16', time:'20:00', opponent:'FC Maroc Wiesbaden', location:'Heim'},
+  {id:'season_8', date:'2026-09-20', time:'15:00', opponent:'FC 1934 Bierstadt II', location:'Heim'},
+  {id:'season_9', date:'2026-09-27', time:'15:00', opponent:'SV Schierstein 1913', location:'Auswärts'},
+  {id:'season_10', date:'2026-10-04', time:'15:00', opponent:'FC 1950 Freudenberg', location:'Heim'},
+  {id:'season_11', date:'2026-10-11', time:'15:00', opponent:'C.D. Espanol Wiesbaden', location:'Auswärts'},
+  {id:'season_12', date:'2026-10-18', time:'15:00', opponent:'1. FC Naurod 1928 II', location:'Heim'},
+  {id:'season_13', date:'2026-11-01', time:'12:00', opponent:'SV Frauenstein 1932 II', location:'Auswärts'},
+  {id:'season_14', date:'2026-11-08', time:'14:30', opponent:'Spvgg. Sonnenberg II', location:'Heim'},
+  {id:'season_15', date:'2026-11-15', time:'15:00', opponent:'FC Albania Mainz-Kastel', location:'Heim'},
+  {id:'season_16', date:'2026-11-22', time:'13:00', opponent:'VfR Wiesbaden', location:'Auswärts'},
+  {id:'season_17', date:'2026-11-29', time:'14:30', opponent:'FSV Hellas Schierstein', location:'Heim'},
+  {id:'season_18', date:'2026-12-06', time:'14:00', opponent:'FC Maroc Wiesbaden', location:'Auswärts'},
+  {id:'season_19', date:'2026-12-13', time:'14:00', opponent:'FSV Hellas Schierstein', location:'Auswärts'},
+  {id:'season_20', date:'2027-02-21', time:'14:30', opponent:'SC Polonia Wiesbaden 2018', location:'Heim'},
+  {id:'season_21', date:'2027-02-28', time:'14:30', opponent:'DJK 1. SC Klarenthal', location:'Auswärts'},
+  {id:'season_22', date:'2027-03-07', time:'15:00', opponent:'SV 1913 Niedernhausen II', location:'Heim'},
+  {id:'season_23', date:'2027-03-14', time:'13:15', opponent:'DJK Schwarz-Weiß Wiesb.', location:'Auswärts'},
+  {id:'season_24', date:'2027-04-04', time:'12:45', opponent:'FC 1934 Bierstadt II', location:'Auswärts'},
+  {id:'season_25', date:'2027-04-11', time:'15:00', opponent:'SV Schierstein 1913', location:'Heim'},
+  {id:'season_26', date:'2027-04-18', time:'15:00', opponent:'FC 1950 Freudenberg', location:'Auswärts'},
+  {id:'season_27', date:'2027-04-25', time:'15:00', opponent:'C.D. Espanol Wiesbaden', location:'Heim'},
+  {id:'season_28', date:'2027-05-02', time:'12:45', opponent:'1. FC Naurod 1928 II', location:'Auswärts'},
+  {id:'season_29', date:'2027-05-17', time:'15:00', opponent:'SV Frauenstein 1932 II', location:'Heim'},
+  {id:'season_30', date:'2027-05-23', time:'12:30', opponent:'Spvgg. Sonnenberg II', location:'Auswärts'},
+];
+
+// Trainingsrhythmus: Mittwoch & Freitag, mit Winterpause 12.12.2026–28.01.2027
+const TRAINING_PERIODS = [
+  {start:'2026-07-31', end:'2026-12-11'},
+  {start:'2027-01-29', end:'2027-05-23'},
+];
+let calMonth = new Date(); calMonth.setDate(1);
+let selectedCalDate = null;
 let selectedPlayer = null;
 let storageReady = false;
 
@@ -726,6 +862,8 @@ async function loadData(){
       fines = data.fines || [];
       training = data.training || {sessions:[], attendance:{}};
       history = data.history || [];
+      absences = data.absences || [];
+      games = data.games || [];
     }
     firebaseOnline = true;
   }catch(e){
@@ -743,6 +881,8 @@ async function loadData(){
     fines = data.fines || [];
     training = data.training || {sessions:[], attendance:{}};
     history = data.history || [];
+    absences = data.absences || [];
+    games = data.games || [];
     firebaseOnline = true;
     showModeBanner();
     renderAll();
@@ -756,7 +896,7 @@ async function loadData(){
 async function persist(){
   if(!firebaseConfigured || !db) return true; // nothing to persist to yet — data stays in memory this session
   try{
-    await docRef.set({fines, training, history}, {merge:true});
+    await docRef.set({fines, training, history, absences, games}, {merge:true});
     firebaseOnline = true;
     showModeBanner();
     return true;
@@ -771,6 +911,7 @@ async function persist(){
 async function saveFines(){ return await persist(); }
 async function saveTraining(){ return await persist(); }
 async function saveHistory(){ return await persist(); }
+async function saveCalendar(){ return await persist(); }
 
 // Adds a fine optimistically. Only rolls back if Firebase is configured & online
 // but genuinely rejected the write — never rolls back just because it's unavailable.
@@ -869,6 +1010,8 @@ function initFormOptions(){
   bonusRecSel.innerHTML += RECORDERS.map(p=>`<option value="${p}">${p}</option>`).join('');
   const now = new Date();
   document.getElementById('bonusMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  document.getElementById('absPlayer').innerHTML = PLAYERS.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
 
 document.getElementById('addFineBtn').addEventListener('click', async ()=>{
@@ -893,6 +1036,7 @@ document.getElementById('addBonusBtn').addEventListener('click', async ()=>{
   const player = document.getElementById('bonusPlayer').value;
   const monthVal = document.getElementById('bonusMonth').value; // YYYY-MM
   const amt = parseFloat(document.getElementById('bonusAmount').value)||0;
+  const reason = document.getElementById('bonusReason').value.trim();
   const recordedBy = document.getElementById('bonusRecordedBy').value;
   if(amt<=0){ alert('Bitte einen Betrag > 0 eingeben.'); return; }
   if(!recordedBy){ alert('Bitte auswählen, wer den Bonus vergibt.'); return; }
@@ -902,12 +1046,179 @@ document.getElementById('addBonusBtn').addEventListener('click', async ()=>{
   const ok = await addFine({
     id: Date.now()+"_"+Math.random().toString(36).slice(2,7),
     player, cat:'Bonus', txt:`Vorbildspieler des Monats${monthLabel?(' — '+monthLabel):''}`,
-    amt:-Math.abs(amt), date, note:'', paid:true, cancelled:false, recordedBy, recordedAt
+    amt:-Math.abs(amt), date, note:reason, paid:true, cancelled:false, recordedBy, recordedAt
   }, 'bonus vergeben');
   if(!ok) return;
+  document.getElementById('bonusReason').value='';
   document.getElementById('bonusRecordedBy').value='';
   renderAll();
 });
+
+// ---------- ABWESENHEIT (Urlaub etc.) ----------
+document.getElementById('addAbsBtn').addEventListener('click', async ()=>{
+  const player = document.getElementById('absPlayer').value;
+  const from = document.getElementById('absFrom').value;
+  const to = document.getElementById('absTo').value || from;
+  const reason = document.getElementById('absReason').value.trim();
+  if(!from){ alert('Bitte mindestens ein „Von"-Datum angeben.'); return; }
+  if(to < from){ alert('„Bis" darf nicht vor „Von" liegen.'); return; }
+  absences.push({id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player, from, to, reason, recordedAt:new Date().toISOString()});
+  await saveCalendar();
+  document.getElementById('absFrom').value='';
+  document.getElementById('absTo').value='';
+  document.getElementById('absReason').value='';
+  renderAll();
+});
+
+// ---------- SPIELTERMINE ----------
+document.getElementById('addGameBtn').addEventListener('click', async ()=>{
+  const date = document.getElementById('gameDate').value;
+  const time = document.getElementById('gameTime').value;
+  const opponent = document.getElementById('gameOpponent').value.trim();
+  const location = document.getElementById('gameLocation').value;
+  if(!date){ alert('Bitte ein Datum angeben.'); return; }
+  if(!opponent){ alert('Bitte einen Gegner angeben.'); return; }
+  games.push({id: Date.now()+"_"+Math.random().toString(36).slice(2,7), date, time, opponent, location});
+  await saveCalendar();
+  document.getElementById('gameOpponent').value='';
+  document.getElementById('gameTime').value='';
+  renderAll();
+});
+
+async function deleteAbsence(id){
+  if(!confirm('Diese Abwesenheit löschen?')) return;
+  absences = absences.filter(a=>a.id!==id);
+  await saveCalendar();
+  renderAll();
+}
+async function deleteGame(id){
+  if(id.startsWith('season_')){ alert('Spielplan-Termine sind fest hinterlegt und können nicht gelöscht werden.'); return; }
+  if(!confirm('Diesen Spieltermin löschen?')) return;
+  games = games.filter(g=>g.id!==id);
+  await saveCalendar();
+  renderAll();
+}
+
+// ---------- KALENDER ----------
+const WEEKDAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+function dstr(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0'); }
+function absencesOn(dateStr){
+  return absences.filter(a=> a.from<=dateStr && dateStr<=a.to);
+}
+function gamesOn(dateStr){
+  return [...SEASON_GAMES, ...games].filter(g=> g.date===dateStr);
+}
+function trainingOn(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  const dow = d.getDay(); // 3 = Mittwoch, 5 = Freitag
+  if(dow!==3 && dow!==5) return false;
+  return TRAINING_PERIODS.some(p=> dateStr>=p.start && dateStr<=p.end);
+}
+
+document.getElementById('calPrev').addEventListener('click', ()=>{
+  calMonth.setMonth(calMonth.getMonth()-1);
+  selectedCalDate = null;
+  renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', ()=>{
+  calMonth.setMonth(calMonth.getMonth()+1);
+  selectedCalDate = null;
+  renderCalendar();
+});
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  if(!grid) return;
+  const title = document.getElementById('calTitle');
+  title.textContent = calMonth.toLocaleDateString('de-DE',{month:'long', year:'numeric'});
+
+  const year = calMonth.getFullYear(), month = calMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = (firstDay.getDay()+6)%7; // Montag=0
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayStr = dstr(new Date());
+
+  let html = WEEKDAYS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startOffset;i++) html += `<div class="cal-cell empty"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const dateObj = new Date(year, month, day);
+    const ds = dstr(dateObj);
+    const abs = absencesOn(ds);
+    const gm = gamesOn(ds);
+    const trn = trainingOn(ds);
+    const classes = ['cal-cell'];
+    if(ds===todayStr) classes.push('today');
+    if(ds===selectedCalDate) classes.push('selected');
+    let dots = '';
+    if(trn) dots += `<span class="cal-dot training"></span>`;
+    if(gm.length) dots += `<span class="cal-dot game"></span>`;
+    if(abs.length) dots += `<span class="cal-dot absence"></span>`;
+    html += `<div class="${classes.join(' ')}" data-date="${ds}">
+      <div class="cal-daynum">${day}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-cell[data-date]').forEach(cell=>{
+    cell.addEventListener('click', ()=>{
+      selectedCalDate = cell.dataset.date;
+      renderCalendar();
+    });
+  });
+
+  const detail = document.getElementById('calDayDetail');
+  if(!selectedCalDate){ detail.style.display='none'; }
+  else{
+    const abs = absencesOn(selectedCalDate);
+    const gm = gamesOn(selectedCalDate);
+    const trn = trainingOn(selectedCalDate);
+    if(abs.length===0 && gm.length===0 && !trn){
+      detail.style.display='block';
+      detail.innerHTML = `<b style="color:var(--off-white)">${formatDateDE(selectedCalDate)}</b><div class="empty" style="padding:6px 0;">Keine Einträge.</div>`;
+    }else{
+      detail.style.display='block';
+      let inner = `<b style="color:var(--off-white)">${formatDateDE(selectedCalDate)}</b>`;
+      if(trn) inner += `<div style="margin-top:6px;">🏋 <b>Training</b></div>`;
+      gm.forEach(g=>{ inner += `<div style="margin-top:6px;">⚽ <b>${g.opponent}</b> (${g.location}${g.time?(', '+g.time+' Uhr'):''})</div>`; });
+      abs.forEach(a=>{ inner += `<div style="margin-top:6px;">🏖 <b>${a.player}</b>${a.reason?(' — '+a.reason):''} <span style="color:var(--off-white-dim);">(${formatDateDE(a.from)}–${formatDateDE(a.to)})</span></div>`; });
+      detail.innerHTML = inner;
+    }
+  }
+}
+function formatDateDE(ds){
+  try{ return new Date(ds+"T00:00:00").toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return ds; }
+}
+
+function renderCalAgenda(){
+  const el = document.getElementById('calAgenda');
+  if(!el) return;
+  const year = calMonth.getFullYear(), month = calMonth.getMonth();
+  const monthPrefix = year+"-"+String(month+1).padStart(2,'0');
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const gm = [...SEASON_GAMES, ...games].filter(g=>g.date.startsWith(monthPrefix)).sort((a,b)=>a.date.localeCompare(b.date));
+  const ab = absences.filter(a=> a.from.startsWith(monthPrefix) || a.to.startsWith(monthPrefix) || (a.from<monthPrefix+'-32' && a.to>=monthPrefix+'-01')).sort((a,b)=>a.from.localeCompare(b.from));
+  const trainingDays = [];
+  for(let day=1; day<=daysInMonth; day++){
+    const ds = `${monthPrefix}-${String(day).padStart(2,'0')}`;
+    if(trainingOn(ds)) trainingDays.push(ds);
+  }
+  if(gm.length===0 && ab.length===0 && trainingDays.length===0){ el.innerHTML = `<div class="empty">Keine Termine in diesem Monat.</div>`; return; }
+  let html = '';
+  if(trainingDays.length){
+    html += `<div class="agenda-item"><span>🏋 Training an ${trainingDays.length} Tagen (Mi &amp; Fr): ${trainingDays.map(d=>d.slice(8)).join(', ')}.</span></div>`;
+  }
+  gm.forEach(g=>{
+    const isFixed = g.id.startsWith('season_');
+    html += `<div class="agenda-item"><span>⚽ ${formatDateDE(g.date)}${g.time?(' · '+g.time):''} — <b style="color:var(--off-white)">${g.opponent}</b> (${g.location})</span>${isFixed?'':`<span class="del" data-del-game="${g.id}">löschen</span>`}</div>`;
+  });
+  ab.forEach(a=>{
+    html += `<div class="agenda-item"><span>🏖 ${formatDateDE(a.from)}–${formatDateDE(a.to)} — <b style="color:var(--off-white)">${a.player}</b>${a.reason?(' · '+a.reason):''}</span><span class="del" data-del-abs="${a.id}">löschen</span></div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('[data-del-game]').forEach(b=> b.addEventListener('click', ()=>deleteGame(b.dataset.delGame)));
+  el.querySelectorAll('[data-del-abs]').forEach(b=> b.addEventListener('click', ()=>deleteAbsence(b.dataset.delAbs)));
+}
 
 // ---------- RENDER: TOTALS ----------
 function renderTotals(){
@@ -921,6 +1232,16 @@ function renderTotals(){
 }
 
 // ---------- RENDER: PLAYER LIST ----------
+function bonusCountFor(player){
+  return fines.filter(f=>f.player===player && f.cat==='Bonus' && !f.cancelled).length;
+}
+function bonusBadge(count){
+  if(count>=4) return {icon:'🥇', label:'Serien-Vorbild', cls:'gold'};
+  if(count>=2) return {icon:'🥈', label:'Mehrfach-Vorbild', cls:'silver'};
+  if(count>=1) return {icon:'🥉', label:'Vorbildspieler', cls:'bronze'};
+  return null;
+}
+
 function consequenceForOpenAmt(amt){
   if(amt>=50) return "Ausschluss wird geprüft";
   if(amt>=40) return "Suspendiert (Spiele & Training)";
@@ -938,8 +1259,9 @@ function renderPlayerList(){
     const open = openFines.reduce((s,f)=>s+f.amt,0);
     const cons = consequenceForOpenAmt(open);
     const hasOverdue = openFines.some(f=>dueInfo(f.date).state==='overdue');
+    const badge = bonusBadge(bonusCountFor(p));
     return `<div class="player-row" data-player="${p}">
-      <span class="pname">${p}${hasOverdue?'<span class="badge-consequence" style="background:var(--crimson-bright);">⏰ überfällig</span>':''}${cons?`<span class="badge-consequence">${cons}</span>`:''}</span>
+      <span class="pname">${p}${badge?`<span class="badge-vorbild ${badge.cls}" title="${badge.label}">${badge.icon}</span>`:''}${hasOverdue?'<span class="badge-consequence" style="background:var(--crimson-bright);">⏰ überfällig</span>':''}${cons?`<span class="badge-consequence">${cons}</span>`:''}</span>
       <span class="ptotal ${total>0?'pos':(total<0?'credit':'zero')}">${fmt(total)}</span>
     </div>`;
   }).join('');
@@ -955,7 +1277,8 @@ function renderPlayerDetail(){
   const card = document.getElementById('playerDetailCard');
   if(!selectedPlayer){ card.style.display='none'; return; }
   card.style.display='block';
-  document.getElementById('playerDetailName').textContent = selectedPlayer;
+  const detailBadge = bonusBadge(bonusCountFor(selectedPlayer));
+  document.getElementById('playerDetailName').innerHTML = selectedPlayer + (detailBadge?` <span class="badge-vorbild ${detailBadge.cls}" title="${detailBadge.label}" style="font-size:11px;">${detailBadge.icon} ${detailBadge.label}</span>`:'');
   const pf = fines.filter(f=>f.player===selectedPlayer).sort((a,b)=> b.date.localeCompare(a.date));
   const entriesDiv = document.getElementById('playerDetailEntries');
   if(pf.length===0){
@@ -1151,6 +1474,16 @@ function renderStatistik(){
     ? `🏅 ${bonusEntries.length} Vorbildspieler-Bonus${bonusEntries.length===1?'':'se'} vergeben · insgesamt ${fmt(bonusSum)} Gutschrift`
     : 'Noch keine Boni vergeben.';
 
+  const byPlayerBonus = {};
+  bonusEntries.forEach(f=>{ byPlayerBonus[f.player] = (byPlayerBonus[f.player]||0) + 1; });
+  const bonusRanking = Object.entries(byPlayerBonus).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('statBonusRanking').innerHTML = bonusRanking.length ? bonusRanking.map(([p,count])=>{
+    const b = bonusBadge(count);
+    return `<div class="stat-row">
+      <div class="stat-label"><span>${b.icon} ${p} <span style="color:var(--off-white-dim)">(${b.label})</span></span><span class="val">${count}×</span></div>
+    </div>`;
+  }).join('') : '';
+
   // Categories (ohne Bonus — nur echte Strafenarten)
   const byCat = {};
   active.filter(f=>f.cat!=='Bonus').forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
@@ -1181,6 +1514,8 @@ function renderAll(){
   renderTrainingGrid();
   renderHistorie();
   renderStatistik();
+  renderCalendar();
+  renderCalAgenda();
 }
 
 document.getElementById('crestImg').src = LOGO_SRC;
