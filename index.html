@@ -465,7 +465,13 @@
 
     <div class="card">
       <h2><span class="n">5</span>Zahlungsregelungen &amp; Zusatzsanktionen</h2>
-      <div class="note" style="margin-top:0;">Strafen sind unaufgefordert bei den Kassierern zu melden &amp; zu begleichen — <b style="color:var(--off-white)">Gabo</b>, <b style="color:var(--off-white)">Erencan</b> und <b style="color:var(--off-white)">Nouri</b> sind gleichberechtigt als Kassierer zuständig. Ab Aussprache läuft eine Zahlungsfrist von <b style="color:var(--gold-bright)">7 Tagen</b> — die App zeigt bei jeder offenen Strafe automatisch die verbleibende Zeit bzw. „überfällig seit …" an. Offene Strafen kosten pro Verpassen <b style="color:var(--crimson-bright)">+2 €</b>, bis sie bezahlt wurden, und lösen zusätzlich aus:</div>
+      <div class="note" style="margin-top:0;">Strafen sind unaufgefordert bei den Kassierern zu melden &amp; zu begleichen — <b style="color:var(--off-white)">Gabo</b>, <b style="color:var(--off-white)">Erencan</b> und <b style="color:var(--off-white)">Nouri</b> sind gleichberechtigt als Kassierer zuständig. Ab Aussprache läuft eine Zahlungsfrist von <b style="color:var(--gold-bright)">7 Tagen</b> — die App zeigt bei jeder offenen Strafe automatisch die verbleibende Zeit bzw. „überfällig seit …" an. Wird die Frist verpasst, greift eine gestaffelte Mahnung:</div>
+      <div class="escalation">
+        <div class="esc-item"><span class="thresh">1. Mahnung</span> +2 €</div>
+        <div class="esc-item"><span class="thresh">2. Mahnung</span> eine Woche später, +4 €</div>
+        <div class="esc-item"><span class="thresh">3. Mahnung</span> wieder eine Woche später, +7 €</div>
+      </div>
+      <div class="note">Diese Mahngebühren zählen als zusätzliche Strafen und lösen bei Erreichen der jeweiligen Summe zusätzlich aus:</div>
       <div class="escalation">
         <div class="esc-item"><span class="thresh">ab 15 €</span> bereitet der Spieler ein Essen fürs Team vor</div>
         <div class="esc-item"><span class="thresh">ab 20 €</span> Suspendierung für die nächsten Spiele</div>
@@ -531,6 +537,12 @@
     </div>
 
     <div class="card">
+      <h2>🕐 Strafen nach Aktualität</h2>
+      <div class="note" style="margin-top:0;">Zuletzt ausgesprochene Strafen zuerst — mit Countdown bis zur nächsten Mahnung.</div>
+      <div id="recentFines" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
       <h2>Übersicht pro Spieler <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">34 Spieler</span></h2>
       <div id="playerList"></div>
     </div>
@@ -554,6 +566,18 @@
       <div class="grid-wrap" style="margin-top:12px;">
         <table class="tgrid" id="trainingGrid"></table>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>🏆 Trainingsweltmeister <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">Top 10 · Gesamtzahl</span></h2>
+      <div class="note" style="margin-top:0;">Rangliste nach der Gesamtzahl an Trainingsteilnahmen seit Saisonbeginn (unabhängig von Serien).</div>
+      <div id="worldChampTable" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>🔥 Form-Tabelle <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">Top 10 · aktuelle Serie</span></h2>
+      <div class="note" style="margin-top:0;">Wer gerade am längsten in Folge dabei ist, steht oben — bei 10× in Folge vor jemandem mit nur 9×.</div>
+      <div id="formTable" style="margin-top:8px;"></div>
     </div>
   </div>
 
@@ -639,6 +663,11 @@
         <option value="Auswärts">Auswärts</option>
       </select>
       <button class="btn secondary" id="addGameBtn">Spiel eintragen</button>
+    </div>
+
+    <div class="card">
+      <h2>🏖 Die nächsten Urlaube / Abwesenheiten</h2>
+      <div id="nextAbsences"></div>
     </div>
 
     <div class="card">
@@ -780,6 +809,16 @@ function dueInfo(dateStr){
   if(remaining > 0) return {state:'ok', remaining, label:`noch ${remaining} Tag${remaining===1?'':'e'} zum Zahlen`};
   if(remaining === 0) return {state:'today', remaining, label:`heute fällig — letzter Tag!`};
   return {state:'overdue', remaining, label:`überfällig seit ${-remaining} Tag${-remaining===1?'':'en'}`};
+}
+
+// Gestaffelte Mahngebühr: 1. Mahnung +2€, 2. Mahnung (eine Woche später) +4€, 3. Mahnung (wieder eine Woche später) +7€, danach weiter +7€
+const MAHN_TIERS = [2, 4, 7];
+function mahnCountFor(fineId){
+  return fines.filter(f=>!f.cancelled && f.relatesTo===fineId).length;
+}
+function nextMahnAmount(fineId){
+  const count = mahnCountFor(fineId);
+  return MAHN_TIERS[Math.min(count, MAHN_TIERS.length-1)];
 }
 function logHistory(action, {player=null, amt=null, ruleTxt=null, actor, note=null}={}){
   history.push({
@@ -1213,6 +1252,18 @@ function formatDateDE(ds){
   try{ return new Date(ds+"T00:00:00").toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return ds; }
 }
 
+function renderNextAbsences(){
+  const el = document.getElementById('nextAbsences');
+  if(!el) return;
+  const todayStr = dstr(new Date());
+  const upcoming = absences.filter(a=> a.to>=todayStr).sort((a,b)=>a.from.localeCompare(b.from)).slice(0,5);
+  if(upcoming.length===0){ el.innerHTML = `<div class="empty">Keine anstehenden Abwesenheiten.</div>`; return; }
+  el.innerHTML = upcoming.map(a=>{
+    const ongoing = a.from<=todayStr && todayStr<=a.to;
+    return `<div class="agenda-item"><span>🏖 ${ongoing?'<b style="color:var(--gold-bright)">gerade jetzt</b> · ':''}${formatDateDE(a.from)}–${formatDateDE(a.to)} — <b style="color:var(--off-white)">${a.player}</b>${a.reason?(' · '+a.reason):''}</span></div>`;
+  }).join('');
+}
+
 function renderCalAgenda(){
   const el = document.getElementById('calAgenda');
   if(!el) return;
@@ -1273,6 +1324,37 @@ function consequenceForOpenAmt(amt){
   return null;
 }
 
+function renderRecentFines(){
+  const el = document.getElementById('recentFines');
+  if(!el) return;
+  const list = fines.filter(f=>!f.cancelled && f.cat!=='Bonus').sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,15);
+  if(list.length===0){ el.innerHTML = `<div class="empty">Noch keine Strafen ausgesprochen.</div>`; return; }
+  el.innerHTML = list.map(f=>{
+    const isOpenActive = !f.paid;
+    const due = isOpenActive ? dueInfo(f.date) : null;
+    return `<div class="fine-entry" data-recent-id="${f.id}" style="cursor:pointer;">
+      <div class="top">
+        <span>${f.player} <span style="color:var(--off-white-dim); font-weight:400;">— ${f.txt}</span></span>
+        <span class="amt">${fmt(f.amt)}</span>
+      </div>
+      <div class="meta">${f.cat} · ${f.date}${f.recordedBy?(' · erfasst von '+f.recordedBy):''}</div>
+      ${isOpenActive
+        ? `<div class="due-badge due-${due.state}">${due.state==='overdue'?'⏰ ':(due.state==='today'?'⚠ ':'')}${due.label}</div>`
+        : `<div class="due-badge" style="color:var(--sage-bright);">✓ bezahlt</div>`}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('[data-recent-id]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const f = fines.find(x=>x.id===row.dataset.recentId);
+      if(!f) return;
+      selectedPlayer = f.player;
+      renderPlayerDetail();
+      const card = document.getElementById('playerDetailCard');
+      if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+}
+
 function renderPlayerList(){
   const list = document.getElementById('playerList');
   list.innerHTML = PLAYERS.map(p=>{
@@ -1322,7 +1404,7 @@ function renderPlayerDetail(){
         ${isOpenActive ? `<div class="due-badge due-${due.state}">${due.state==='overdue'?'⏰ ':(due.state==='today'?'⚠ ':'')}${due.label}</div>` : ''}
         <div class="actions">
           ${(!f.cancelled && !isBonus) ? `<span class="chip paid" data-action="toggle">${f.paid?'✓ bezahlt (Häkchen aufheben)':'✓ als bezahlt markieren'}</span>` : ''}
-          ${isOpenActive ? `<span class="chip mahn" data-action="mahn">+2€ Mahngebühr</span>` : ''}
+          ${isOpenActive ? `<span class="chip mahn" data-action="mahn">+${nextMahnAmount(f.id)}€ Mahnung (${mahnCountFor(f.id)+1}.)</span>` : ''}
           <span class="chip storno" data-action="storno">${f.cancelled?'Storno aufheben':'stornieren'}</span>
         </div>
       </div>
@@ -1343,11 +1425,13 @@ function renderPlayerDetail(){
       const mahnBtn = el.querySelector('[data-action="mahn"]');
       if(mahnBtn) mahnBtn.addEventListener('click', async ()=>{
         const f = fines.find(x=>x.id===id);
-        const actor = await pickActor('Wer trägt die Mahngebühr ein?', `Offene Strafe verpasst: ${f.player} · ${f.txt}`);
+        const tier = mahnCountFor(f.id)+1;
+        const amt = nextMahnAmount(f.id);
+        const actor = await pickActor(`Wer trägt die ${tier}. Mahnung ein?`, `Offene Strafe verpasst: ${f.player} · ${f.txt} · +${amt} €`);
         if(!actor) return;
-        const newFine = {id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player:f.player, cat:'Sonstiges', txt:'Offene Strafe nicht beglichen (Mahngebühr pro Verpassen)', amt:2, date:new Date().toISOString().slice(0,10), note:`bezieht sich auf: ${f.txt} vom ${f.date}`, paid:false, cancelled:false, recordedBy:actor, recordedAt:new Date().toISOString()};
+        const newFine = {id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player:f.player, cat:'Sonstiges', txt:`${tier}. Mahnung — Strafe nicht rechtzeitig beglichen`, amt, date:new Date().toISOString().slice(0,10), note:`bezieht sich auf: ${f.txt} vom ${f.date}`, paid:false, cancelled:false, recordedBy:actor, recordedAt:new Date().toISOString(), relatesTo:f.id};
         fines.push(newFine);
-        logHistory('mahngebühr', {player:f.player, amt:2, ruleTxt:`Mahngebühr zu „${f.txt}“`, actor});
+        logHistory('mahngebühr', {player:f.player, amt, ruleTxt:`${tier}. Mahnung zu „${f.txt}"`, actor});
         await saveFines();
         renderAll();
       });
@@ -1389,6 +1473,31 @@ function currentStreak(player){
     else break;
   }
   return streak;
+}
+function totalAttendanceCount(player){
+  const att = training.attendance[player];
+  if(!att) return 0;
+  return Object.values(att).filter(Boolean).length;
+}
+function renderRankTable(elId, entries, unitLabel){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  if(entries.length===0){ el.innerHTML = `<div class="empty">Noch keine Trainingsdaten.</div>`; return; }
+  const max = entries[0][1] || 1;
+  el.innerHTML = entries.map(([p,val],i)=>`
+    <div class="stat-row">
+      <div class="stat-label"><span><span style="color:var(--gold-bright); font-family:'Space Mono'; font-weight:700;">${i+1}.</span> ${p}</span><span class="val">${val}${unitLabel}</span></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill sage" style="width:${Math.max(0,(val/max*100)).toFixed(0)}%"></div></div>
+    </div>
+  `).join('');
+}
+function renderWorldChampTable(){
+  const entries = PLAYERS.map(p=>[p, totalAttendanceCount(p)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  renderRankTable('worldChampTable', entries, '×');
+}
+function renderFormTable(){
+  const entries = PLAYERS.map(p=>[p, currentStreak(p)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  renderRankTable('formTable', entries, '×');
 }
 function streakReward(streak){
   if(streak>=20) return {cls:'streak-hi', label:'+20€'};
@@ -1462,8 +1571,8 @@ function renderHistorie(){
 function renderStatistik(){
   const countEl = document.getElementById('statCountFines');
   if(!countEl) return;
-  const active = fines.filter(f=>!f.cancelled);
-  const cancelledCount = fines.filter(f=>f.cancelled).length;
+  const active = fines.filter(f=>!f.cancelled && f.cat!=='Bonus');
+  const cancelledCount = fines.filter(f=>f.cancelled && f.cat!=='Bonus').length;
   const total = active.reduce((s,f)=>s+f.amt,0);
   const paidSum = active.filter(f=>f.paid).reduce((s,f)=>s+f.amt,0);
   const openSum = total-paidSum;
@@ -1473,10 +1582,10 @@ function renderStatistik(){
   document.getElementById('statCancelled').textContent = cancelledCount;
 
   const paidPct = total>0 ? (paidSum/total*100) : 0;
-  document.getElementById('statSplit').innerHTML = total>0
-    ? `<div class="p" style="width:${paidPct}%"></div><div class="o" style="width:${100-paidPct}%"></div>`
-    : `<div class="o" style="width:100%"></div>`;
-  document.getElementById('statSplitLabel').textContent = `${fmt(paidSum)} bezahlt (${paidPct.toFixed(0)}%) · ${fmt(openSum)} offen`;
+  document.getElementById('statSplit').innerHTML = active.length===0
+    ? `<div class="o" style="width:100%; opacity:.3;"></div>`
+    : (total>0 ? `<div class="p" style="width:${paidPct}%"></div><div class="o" style="width:${100-paidPct}%"></div>` : `<div class="o" style="width:100%"></div>`);
+  document.getElementById('statSplitLabel').textContent = active.length===0 ? 'Noch keine Strafen erfasst.' : `${fmt(paidSum)} bezahlt (${paidPct.toFixed(0)}%) · ${fmt(openSum)} offen`;
 
   // Top players (reine Strafen, Boni zählen hier nicht mit)
   const byPlayer = {};
@@ -1491,7 +1600,7 @@ function renderStatistik(){
   `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
 
   // Boni-Übersicht
-  const bonusEntries = active.filter(f=>f.cat==='Bonus');
+  const bonusEntries = fines.filter(f=>!f.cancelled && f.cat==='Bonus');
   const bonusSum = bonusEntries.reduce((s,f)=>s+Math.abs(f.amt),0);
   document.getElementById('statBonusLine').textContent = bonusEntries.length
     ? `🏅 ${bonusEntries.length} Vorbildspieler-Bonus${bonusEntries.length===1?'':'se'} vergeben · insgesamt ${fmt(bonusSum)} Gutschrift`
@@ -1534,11 +1643,15 @@ function renderAll(){
   renderTotals();
   renderPlayerList();
   renderPlayerDetail();
+  renderRecentFines();
   renderTrainingGrid();
+  renderWorldChampTable();
+  renderFormTable();
   renderHistorie();
   renderStatistik();
   renderCalendar();
   renderCalAgenda();
+  renderNextAbsences();
 }
 
 document.getElementById('crestImg').src = LOGO_SRC;
