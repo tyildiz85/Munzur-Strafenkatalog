@@ -283,6 +283,9 @@
   /* FINE ENTRY EXTRAS */
   .fine-entry.cancelled{opacity:.55;}
   .fine-entry.cancelled .top span:first-child{text-decoration:line-through;}
+  .fine-entry.bonus{border-color:var(--sage); background:rgba(76,154,114,.08);}
+  .fine-entry.bonus .amt{color:var(--sage-bright);}
+  .ptotal.credit{color:var(--sage-bright);}
   .badge-storniert{
     font-family:'Oswald'; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px;
     background:rgba(255,255,255,.12); color:var(--off-white-dim); padding:2px 6px; border-radius:5px; margin-left:6px;
@@ -389,6 +392,7 @@
       <h2><span class="n">2</span>Spiel</h2>
       <div class="rule"><div class="txt">Unentschuldigt zu spät</div><div class="amt">5 € / 10 Min</div></div>
       <div class="rule"><div class="txt">Unentschuldigt nicht kommen</div><div class="amt">20 €</div></div>
+      <div class="rule"><div class="txt">Kein Feedback zur Umfrage bis spätestens Freitag 18 Uhr</div><div class="amt">5 €</div></div>
       <div class="rule"><div class="txt">Gelb wegen Meckern / Unsportlichkeit</div><div class="amt">5 €</div></div>
       <div class="rule"><div class="txt">Rot wegen Meckern / Unsportlichkeit</div><div class="amt">30 €</div></div>
       <div class="rule"><div class="txt">Bei Auswechslung nicht auf der Bank bleiben</div><div class="amt">10 €</div></div>
@@ -467,6 +471,22 @@
     </div>
 
     <div class="card">
+      <h2>🏅 Vorbildspieler des Monats</h2>
+      <div class="note" style="margin-top:0;">Gutschrift laut Regelwerk Punkt 4 — wird mit zukünftigen Strafen verrechnet und am Saisonende ausgezahlt, falls ungenutzt.</div>
+      <label>Spieler</label>
+      <select id="bonusPlayer"></select>
+      <label>Monat</label>
+      <input type="month" id="bonusMonth">
+      <label>Betrag der Gutschrift (€)</label>
+      <input type="number" id="bonusAmount" step="0.5" min="0" value="10">
+      <label>Erfasst von <span style="color:var(--crimson-bright)">*</span></label>
+      <select id="bonusRecordedBy">
+        <option value="">— bitte wählen —</option>
+      </select>
+      <button class="btn secondary" id="addBonusBtn">Bonus vergeben</button>
+    </div>
+
+    <div class="card">
       <h2>Übersicht pro Spieler <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">34 Spieler</span></h2>
       <div id="playerList"></div>
     </div>
@@ -520,6 +540,10 @@
       <div id="statTopPlayers"></div>
     </div>
     <div class="card">
+      <h2>🏅 Vorbildspieler-Boni</h2>
+      <div class="note" style="margin-top:0;" id="statBonusLine">Noch keine Boni vergeben.</div>
+    </div>
+    <div class="card">
       <h2>Strafen nach Kategorie</h2>
       <div id="statCategories"></div>
     </div>
@@ -570,6 +594,7 @@ const RULES = [
   {cat:"Training", txt:"Respektlosigkeit ggü. Team/Trainer/Verein", amt:40},
   {cat:"Spiel", txt:"Unentschuldigt zu spät (pauschal)", amt:5},
   {cat:"Spiel", txt:"Unentschuldigt nicht gekommen", amt:20},
+  {cat:"Spiel", txt:"Kein Feedback zur Umfrage bis Freitag 18 Uhr", amt:5},
   {cat:"Spiel", txt:"Gelb wegen Meckern/Unsportlichkeit", amt:5},
   {cat:"Spiel", txt:"Rot wegen Meckern/Unsportlichkeit", amt:30},
   {cat:"Spiel", txt:"Bei Auswechslung nicht auf der Bank geblieben", amt:10},
@@ -749,15 +774,15 @@ async function saveHistory(){ return await persist(); }
 
 // Adds a fine optimistically. Only rolls back if Firebase is configured & online
 // but genuinely rejected the write — never rolls back just because it's unavailable.
-async function addFine(fineObj){
+async function addFine(fineObj, actionLabel){
   fines.push(fineObj);
   const histId = Date.now()+"_"+Math.random().toString(36).slice(2,7);
-  history.push({id:histId, ts:new Date().toISOString(), actor:fineObj.recordedBy, action:'erstellt', player:fineObj.player, amt:fineObj.amt, ruleTxt:fineObj.txt, note:null});
+  history.push({id:histId, ts:new Date().toISOString(), actor:fineObj.recordedBy, action:actionLabel||'erstellt', player:fineObj.player, amt:fineObj.amt, ruleTxt:fineObj.txt, note:null});
   const ok = await saveFines();
   if(!ok && firebaseConfigured){
     fines = fines.filter(f=>f.id!==fineObj.id);
     history = history.filter(h=>h.id!==histId);
-    alert('Die Strafe konnte nicht gespeichert werden. Bitte erneut versuchen.');
+    alert('Der Eintrag konnte nicht gespeichert werden. Bitte erneut versuchen.');
   }
   return true; // keep entry visible locally even if remote persistence failed
 }
@@ -837,6 +862,13 @@ function initFormOptions(){
   });
   document.getElementById('fineAmount').value = RULES[0].amt;
   document.getElementById('fineDate').valueAsDate = new Date();
+
+  const bonusPlayerSel = document.getElementById('bonusPlayer');
+  bonusPlayerSel.innerHTML = PLAYERS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  const bonusRecSel = document.getElementById('bonusRecordedBy');
+  bonusRecSel.innerHTML += RECORDERS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  const now = new Date();
+  document.getElementById('bonusMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 }
 
 document.getElementById('addFineBtn').addEventListener('click', async ()=>{
@@ -854,6 +886,26 @@ document.getElementById('addFineBtn').addEventListener('click', async ()=>{
   if(!ok) return;
   document.getElementById('fineNote').value='';
   document.getElementById('fineRecordedBy').value='';
+  renderAll();
+});
+
+document.getElementById('addBonusBtn').addEventListener('click', async ()=>{
+  const player = document.getElementById('bonusPlayer').value;
+  const monthVal = document.getElementById('bonusMonth').value; // YYYY-MM
+  const amt = parseFloat(document.getElementById('bonusAmount').value)||0;
+  const recordedBy = document.getElementById('bonusRecordedBy').value;
+  if(amt<=0){ alert('Bitte einen Betrag > 0 eingeben.'); return; }
+  if(!recordedBy){ alert('Bitte auswählen, wer den Bonus vergibt.'); return; }
+  const monthLabel = monthVal ? new Date(monthVal+"-01").toLocaleDateString('de-DE',{month:'long', year:'numeric'}) : '';
+  const recordedAt = new Date().toISOString();
+  const date = new Date().toISOString().slice(0,10);
+  const ok = await addFine({
+    id: Date.now()+"_"+Math.random().toString(36).slice(2,7),
+    player, cat:'Bonus', txt:`Vorbildspieler des Monats${monthLabel?(' — '+monthLabel):''}`,
+    amt:-Math.abs(amt), date, note:'', paid:true, cancelled:false, recordedBy, recordedAt
+  }, 'bonus vergeben');
+  if(!ok) return;
+  document.getElementById('bonusRecordedBy').value='';
   renderAll();
 });
 
@@ -888,7 +940,7 @@ function renderPlayerList(){
     const hasOverdue = openFines.some(f=>dueInfo(f.date).state==='overdue');
     return `<div class="player-row" data-player="${p}">
       <span class="pname">${p}${hasOverdue?'<span class="badge-consequence" style="background:var(--crimson-bright);">⏰ überfällig</span>':''}${cons?`<span class="badge-consequence">${cons}</span>`:''}</span>
-      <span class="ptotal ${total>0?'pos':'zero'}">${fmt(total)}</span>
+      <span class="ptotal ${total>0?'pos':(total<0?'credit':'zero')}">${fmt(total)}</span>
     </div>`;
   }).join('');
   list.querySelectorAll('.player-row').forEach(row=>{
@@ -910,19 +962,20 @@ function renderPlayerDetail(){
     entriesDiv.innerHTML = `<div class="empty">Keine Strafen erfasst.</div>`;
   }else{
     entriesDiv.innerHTML = pf.map(f=>{
+      const isBonus = f.cat==='Bonus';
       const isOpenActive = !f.paid && !f.cancelled;
       const due = isOpenActive ? dueInfo(f.date) : null;
       return `
-      <div class="fine-entry ${f.cancelled?'cancelled':''}" data-id="${f.id}">
+      <div class="fine-entry ${f.cancelled?'cancelled':''} ${isBonus?'bonus':''}" data-id="${f.id}">
         <div class="top">
-          <span>${f.txt}${f.cancelled?'<span class="badge-storniert">storniert</span>':''}</span>
+          <span>${isBonus?'🏅 ':''}${f.txt}${f.cancelled?'<span class="badge-storniert">storniert</span>':''}</span>
           <span class="amt">${fmt(f.amt)}</span>
         </div>
         <div class="meta">${f.cat} · ${f.date}${f.note?(' · '+f.note):''}</div>
         <div class="meta" style="margin-top:2px;">erfasst von <b style="color:var(--off-white)">${f.recordedBy||'—'}</b>${f.recordedAt?(' · '+formatTimestamp(f.recordedAt)):''}</div>
         ${isOpenActive ? `<div class="due-badge due-${due.state}">${due.state==='overdue'?'⏰ ':(due.state==='today'?'⚠ ':'')}${due.label}</div>` : ''}
         <div class="actions">
-          ${!f.cancelled ? `<span class="chip paid" data-action="toggle">${f.paid?'✓ bezahlt (Häkchen aufheben)':'✓ als bezahlt markieren'}</span>` : ''}
+          ${(!f.cancelled && !isBonus) ? `<span class="chip paid" data-action="toggle">${f.paid?'✓ bezahlt (Häkchen aufheben)':'✓ als bezahlt markieren'}</span>` : ''}
           ${isOpenActive ? `<span class="chip mahn" data-action="mahn">+2€ Mahngebühr</span>` : ''}
           <span class="chip storno" data-action="storno">${f.cancelled?'Storno aufheben':'stornieren'}</span>
         </div>
@@ -1038,10 +1091,10 @@ document.getElementById('resetAll').addEventListener('click', async ()=>{
 
 // ---------- HISTORIE ----------
 const HIST_ICON = {
-  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€'
+  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅'
 };
 const HIST_CLASS = {
-  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr'
+  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt'
 };
 function renderHistorie(){
   const el = document.getElementById('historieList');
@@ -1079,27 +1132,34 @@ function renderStatistik(){
     : `<div class="o" style="width:100%"></div>`;
   document.getElementById('statSplitLabel').textContent = `${fmt(paidSum)} bezahlt (${paidPct.toFixed(0)}%) · ${fmt(openSum)} offen`;
 
-  // Top players
+  // Top players (reine Strafen, Boni zählen hier nicht mit)
   const byPlayer = {};
-  active.forEach(f=>{ byPlayer[f.player] = (byPlayer[f.player]||0) + f.amt; });
-  const topPlayers = Object.entries(byPlayer).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  active.filter(f=>f.cat!=='Bonus').forEach(f=>{ byPlayer[f.player] = (byPlayer[f.player]||0) + f.amt; });
+  const topPlayers = Object.entries(byPlayer).filter(([,amt])=>amt>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxTop = topPlayers.length ? topPlayers[0][1] : 1;
   document.getElementById('statTopPlayers').innerHTML = topPlayers.length ? topPlayers.map(([p,amt])=>`
     <div class="stat-row">
       <div class="stat-label"><span>${p}</span><span class="val">${fmt(amt)}</span></div>
-      <div class="stat-bar-track"><div class="stat-bar-fill crimson" style="width:${(amt/maxTop*100).toFixed(0)}%"></div></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill crimson" style="width:${Math.max(0,(amt/maxTop*100)).toFixed(0)}%"></div></div>
     </div>
   `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
 
-  // Categories
+  // Boni-Übersicht
+  const bonusEntries = active.filter(f=>f.cat==='Bonus');
+  const bonusSum = bonusEntries.reduce((s,f)=>s+Math.abs(f.amt),0);
+  document.getElementById('statBonusLine').textContent = bonusEntries.length
+    ? `🏅 ${bonusEntries.length} Vorbildspieler-Bonus${bonusEntries.length===1?'':'se'} vergeben · insgesamt ${fmt(bonusSum)} Gutschrift`
+    : 'Noch keine Boni vergeben.';
+
+  // Categories (ohne Bonus — nur echte Strafenarten)
   const byCat = {};
-  active.forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
+  active.filter(f=>f.cat!=='Bonus').forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
   const catEntries = Object.entries(byCat).sort((a,b)=>b[1].sum-a[1].sum);
   const maxCat = catEntries.length ? Math.max(...catEntries.map(c=>c[1].sum)) : 1;
   document.getElementById('statCategories').innerHTML = catEntries.length ? catEntries.map(([cat,d])=>`
     <div class="stat-row">
       <div class="stat-label"><span>${cat} <span style="color:var(--off-white-dim)">(${d.count}×)</span></span><span class="val">${fmt(d.sum)}</span></div>
-      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${(d.sum/maxCat*100).toFixed(0)}%"></div></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.max(0,(d.sum/maxCat*100)).toFixed(0)}%"></div></div>
     </div>
   `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
 
