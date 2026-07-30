@@ -117,6 +117,9 @@
     font-size:13.5px; line-height:1.4;
   }
   .rule:last-child{border-bottom:none;}
+  .rule[data-rule-idx]{cursor:pointer; transition:background .15s; border-radius:6px; padding-left:6px; padding-right:6px; margin:0 -6px;}
+  .rule[data-rule-idx]:active{background:rgba(201,162,75,.15);}
+  .rule[data-rule-idx] .amt::after{content:' ➜'; color:var(--gold); font-size:11px; opacity:.6;}
   .rule .txt{color:var(--off-white); flex:1;}
   .rule .amt{color:var(--gold-bright); font-family:'Space Mono'; font-weight:700; white-space:nowrap; font-size:13px;}
   .tag-neu{
@@ -416,40 +419,40 @@
 
     <div class="card">
       <h2><span class="n">1</span>Training</h2>
-      <div class="rule"><div class="txt">Unentschuldigt zu spät</div><div class="amt">2 € / 5 Min</div></div>
-      <div class="rule"><div class="txt">Unentschuldigt nicht kommen</div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Zugesagt und dann unentschuldigt gefehlt</div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Kein Umfrage-Feedback bis 18 Uhr am Trainingstag</div><div class="amt">2,50 €</div></div>
-      <div class="rule"><div class="txt">Unaufgewärmt schießen</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Müll in Kabine + Dusche (pro anwesendem Spieler)</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Verlust eines Balles (pro anwesendem Spieler)</div><div class="amt">3 €</div></div>
-      <div class="rule"><div class="txt">Furzen in der Kabine</div><div class="amt">2 €</div></div>
-      <div class="rule"><div class="txt">Respektlosigkeit gg. Mitspieler / Trainer / Verein</div><div class="amt">40 €</div></div>
+      <div class="rule" data-rule-idx="0"><div class="txt">Unentschuldigt zu spät</div><div class="amt">2 € / 5 Min</div></div>
+      <div class="rule" data-rule-idx="1"><div class="txt">Unentschuldigt nicht kommen</div><div class="amt">10 €</div></div>
+      <div class="rule" data-rule-idx="2"><div class="txt">Zugesagt und dann unentschuldigt gefehlt</div><div class="amt">10 €</div></div>
+      <div class="rule" data-rule-idx="3"><div class="txt">Kein Umfrage-Feedback bis 18 Uhr am Trainingstag</div><div class="amt">2,50 €</div></div>
+      <div class="rule" data-rule-idx="4"><div class="txt">Unaufgewärmt schießen</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="5"><div class="txt">Müll in Kabine + Dusche (pro anwesendem Spieler)</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="6"><div class="txt">Verlust eines Balles (pro anwesendem Spieler)</div><div class="amt">3 €</div></div>
+      <div class="rule" data-rule-idx="7"><div class="txt">Furzen in der Kabine</div><div class="amt">2 €</div></div>
+      <div class="rule" data-rule-idx="8"><div class="txt">Respektlosigkeit gg. Mitspieler / Trainer / Verein</div><div class="amt">40 €</div></div>
     </div>
 
     <div class="card">
       <h2><span class="n">2</span>Spiel</h2>
-      <div class="rule"><div class="txt">Unentschuldigt zu spät</div><div class="amt">5 € / 10 Min</div></div>
-      <div class="rule"><div class="txt">Unentschuldigt nicht kommen</div><div class="amt">20 €</div></div>
-      <div class="rule"><div class="txt">Kein Feedback zur Umfrage bis spätestens Freitag 18 Uhr</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Gelb wegen Meckern / Unsportlichkeit</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Rot wegen Meckern / Unsportlichkeit</div><div class="amt">30 €</div></div>
-      <div class="rule"><div class="txt">Bei Auswechslung nicht auf der Bank bleiben</div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Schuhe / Schienbeinschoner / TW-Handschuhe vergessen</div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Verlust eines Balles (pro nominiertem Spieler)</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Müll in Kabine + Dusche (pro nominiertem Spieler)</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Respektlosigkeit gg. Gegner/Schiri/Mitspieler/Trainer/Verein</div><div class="amt">40 €</div></div>
-      <div class="rule"><div class="txt">Rauchen oder Trinken im Trikot</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Trikot nicht umgedreht & ordentlich abgelegt <span style="font-size:11px;color:var(--off-white-dim);">(Spieler wird anhand der Trikotnummer identifiziert)</span></div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Hose / Stutzen / Aufwärmshirt nicht ordentlich (pro nominiertem Spieler)</div><div class="amt">2 €</div></div>
+      <div class="rule" data-rule-idx="9"><div class="txt">Unentschuldigt zu spät</div><div class="amt">5 € / 10 Min</div></div>
+      <div class="rule" data-rule-idx="10"><div class="txt">Unentschuldigt nicht kommen</div><div class="amt">20 €</div></div>
+      <div class="rule" data-rule-idx="11"><div class="txt">Kein Feedback zur Umfrage bis spätestens Freitag 18 Uhr</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="12"><div class="txt">Gelb wegen Meckern / Unsportlichkeit</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="13"><div class="txt">Rot wegen Meckern / Unsportlichkeit</div><div class="amt">30 €</div></div>
+      <div class="rule" data-rule-idx="14"><div class="txt">Bei Auswechslung nicht auf der Bank bleiben</div><div class="amt">10 €</div></div>
+      <div class="rule" data-rule-idx="15"><div class="txt">Schuhe / Schienbeinschoner / TW-Handschuhe vergessen</div><div class="amt">10 €</div></div>
+      <div class="rule" data-rule-idx="16"><div class="txt">Verlust eines Balles (pro nominiertem Spieler)</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="17"><div class="txt">Müll in Kabine + Dusche (pro nominiertem Spieler)</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="18"><div class="txt">Respektlosigkeit gg. Gegner/Schiri/Mitspieler/Trainer/Verein</div><div class="amt">40 €</div></div>
+      <div class="rule" data-rule-idx="19"><div class="txt">Rauchen oder Trinken im Trikot</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="20"><div class="txt">Trikot nicht umgedreht & ordentlich abgelegt <span style="font-size:11px;color:var(--off-white-dim);">(Spieler wird anhand der Trikotnummer identifiziert)</span></div><div class="amt">10 €</div></div>
+      <div class="rule" data-rule-idx="21"><div class="txt">Hose / Stutzen / Aufwärmshirt nicht ordentlich (pro nominiertem Spieler)</div><div class="amt">2 €</div></div>
     </div>
 
     <div class="card">
       <h2><span class="n">3</span>Mannschaftssitzung Freitag <span style="font-size:11px;color:var(--off-white-dim);text-transform:none;font-family:Inter;">(Beginn 21:20 Uhr)</span></h2>
-      <div class="rule"><div class="txt">Zu spät</div><div class="amt">5 € / 10 Min</div></div>
-      <div class="rule"><div class="txt">Unentschuldigtes Nicht-Erscheinen</div><div class="amt">15 €</div></div>
-      <div class="rule"><div class="txt">Stören / Schwätzen / Nicht zuhören</div><div class="amt">2 €</div></div>
-      <div class="rule"><div class="txt">Handy klingelt / ablenkt</div><div class="amt">5 €</div></div>
+      <div class="rule" data-rule-idx="22"><div class="txt">Zu spät</div><div class="amt">5 € / 10 Min</div></div>
+      <div class="rule" data-rule-idx="23"><div class="txt">Unentschuldigtes Nicht-Erscheinen</div><div class="amt">15 €</div></div>
+      <div class="rule" data-rule-idx="24"><div class="txt">Stören / Schwätzen / Nicht zuhören</div><div class="amt">2 €</div></div>
+      <div class="rule" data-rule-idx="25"><div class="txt">Handy klingelt / ablenkt</div><div class="amt">5 €</div></div>
     </div>
 
     <div class="card">
@@ -961,6 +964,26 @@ function activatePanel(name){
   document.getElementById('menuDropdown').classList.remove('open');
   document.getElementById('menuBtn').classList.remove('active');
 }
+
+// ---------- SCHNELLWEG: Regelwerk-Zeile antippen -> direkt ins Strafenformular ----------
+document.querySelectorAll('.rule[data-rule-idx]').forEach(row=>{
+  row.addEventListener('click', ()=>{
+    const idx = row.dataset.ruleIdx;
+    const ruleSel = document.getElementById('fineRule');
+    ruleSel.value = idx;
+    document.getElementById('fineAmount').value = RULES[idx].amt;
+    activatePanel('spieler');
+    window.scrollTo({top:0, behavior:'smooth'});
+    const playerSel = document.getElementById('finePlayer');
+    playerSel.focus();
+    const card = playerSel.closest('.card');
+    if(card){
+      card.style.transition = 'box-shadow .3s';
+      card.style.boxShadow = '0 0 0 2px var(--gold)';
+      setTimeout(()=>{ card.style.boxShadow = 'none'; }, 900);
+    }
+  });
+});
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click', ()=> activatePanel(tab.dataset.tab));
 });
