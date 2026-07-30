@@ -223,6 +223,103 @@
   }
   .footer-note{text-align:center; font-size:11px; color:var(--off-white-dim); margin-top:20px; line-height:1.6;}
   .reset-link{color:var(--crimson-bright); text-decoration:underline; cursor:pointer;}
+
+  /* MENU */
+  .menu-row{display:flex; gap:6px; margin:18px 0 14px; align-items:stretch;}
+  .menu-row .tabs{margin:0; flex:1;}
+  .menu-btn{
+    width:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:var(--navy-card); border:1px solid var(--navy-line); border-radius:12px;
+    font-size:18px; cursor:pointer; color:var(--off-white-dim); position:relative;
+  }
+  .menu-btn.active{color:var(--gold-bright); border-color:var(--gold);}
+  .menu-dropdown{
+    position:absolute; top:52px; right:0; z-index:20; min-width:190px;
+    background:var(--navy-card); border:1px solid var(--navy-line); border-radius:12px;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,.7); overflow:hidden; display:none;
+  }
+  .menu-dropdown.open{display:block;}
+  .menu-item{
+    padding:12px 14px; font-family:'Oswald'; font-size:13px; letter-spacing:.3px;
+    cursor:pointer; border-bottom:1px solid var(--navy-line); color:var(--off-white);
+  }
+  .menu-item:last-child{border-bottom:none;}
+  .menu-item:active, .menu-item.active{background:rgba(201,162,75,.12); color:var(--gold-bright);}
+
+  /* ACTOR PICKER MODAL */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(4,10,20,.72); z-index:100;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{
+    width:100%; max-width:480px; background:var(--navy-card); border:1px solid var(--navy-line);
+    border-radius:18px 18px 0 0; padding:20px 18px 26px; animation:slideup .2s ease;
+  }
+  @keyframes slideup{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal-title{font-family:'Oswald'; font-size:15px; letter-spacing:.5px; color:var(--gold-bright); margin-bottom:4px;}
+  .modal-sub{font-size:12px; color:var(--off-white-dim); margin-bottom:14px;}
+  .modal-actor-btn{
+    display:block; width:100%; text-align:left; padding:12px 14px; margin-top:8px;
+    background:#0e2138; border:1px solid var(--navy-line); border-radius:10px;
+    color:var(--off-white); font-family:'Oswald'; font-size:13.5px; cursor:pointer;
+  }
+  .modal-cancel{
+    display:block; width:100%; text-align:center; padding:12px 14px; margin-top:14px;
+    background:none; border:1px solid var(--navy-line); border-radius:10px;
+    color:var(--off-white-dim); font-family:'Oswald'; font-size:12.5px; cursor:pointer;
+  }
+
+  /* FINE ENTRY EXTRAS */
+  .fine-entry.cancelled{opacity:.55;}
+  .fine-entry.cancelled .top span:first-child{text-decoration:line-through;}
+  .badge-storniert{
+    font-family:'Oswald'; font-size:9.5px; text-transform:uppercase; letter-spacing:.4px;
+    background:rgba(255,255,255,.12); color:var(--off-white-dim); padding:2px 6px; border-radius:5px; margin-left:6px;
+  }
+  .due-badge{
+    font-family:'Space Mono'; font-size:10.5px; margin-top:4px; font-weight:700;
+  }
+  .due-badge.due-ok{color:var(--sage-bright);}
+  .due-badge.due-today{color:var(--gold-bright);}
+  .due-badge.due-overdue{color:var(--crimson-bright);}
+  .chip.mahn{background:rgba(201,162,75,.15); color:var(--gold-bright); border-color:var(--gold);}
+  .chip.storno{background:rgba(255,255,255,.06); color:var(--off-white-dim);}
+
+  /* HISTORIE */
+  .hist-entry{
+    display:flex; gap:10px; padding:9px 0; border-bottom:1px dashed var(--navy-line); font-size:12.5px;
+  }
+  .hist-entry:last-child{border-bottom:none;}
+  .hist-icon{
+    width:26px; height:26px; border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:13px; background:#0e2138;
+  }
+  .hist-icon.erstellt{color:var(--crimson-bright);}
+  .hist-icon.bezahlt{color:var(--sage-bright);}
+  .hist-icon.storniert{color:var(--off-white-dim);}
+  .hist-icon.mahngebuehr{color:var(--gold-bright);}
+  .hist-body{flex:1;}
+  .hist-line{color:var(--off-white);}
+  .hist-meta{color:var(--off-white-dim); font-size:11px; margin-top:2px;}
+
+  /* STATISTIK */
+  .stat-row{margin-bottom:10px;}
+  .stat-label{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;}
+  .stat-label .val{font-family:'Space Mono'; color:var(--gold-bright); font-weight:700;}
+  .stat-bar-track{background:#0e2138; border-radius:6px; height:8px; overflow:hidden; border:1px solid var(--navy-line);}
+  .stat-bar-fill{height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright));}
+  .stat-bar-fill.sage{background:linear-gradient(90deg, var(--sage), var(--sage-bright));}
+  .stat-bar-fill.crimson{background:linear-gradient(90deg, var(--crimson), var(--crimson-bright));}
+  .stat-split{display:flex; height:14px; border-radius:7px; overflow:hidden; border:1px solid var(--navy-line); margin-top:6px;}
+  .stat-split .p{background:var(--sage);}
+  .stat-split .o{background:var(--crimson);}
+  .stat-kpis{display:flex; gap:10px; margin-bottom:16px;}
+  .stat-kpi{
+    flex:1; background:#0e2138; border:1px solid var(--navy-line); border-radius:10px; padding:10px; text-align:center;
+  }
+  .stat-kpi .n{font-family:'Space Mono'; font-size:20px; font-weight:700; color:var(--gold-bright);}
+  .stat-kpi .l{font-family:'Oswald'; font-size:9.5px; text-transform:uppercase; color:var(--off-white-dim); letter-spacing:.4px; margin-top:2px;}
 </style>
 </head>
 <body>
@@ -232,7 +329,7 @@
     <img class="crest-img" id="crestImg" alt="SKC Munzur Wiesbaden Logo">
     <div class="club-name">SKC Munzur Wiesbaden e.V.</div>
     <div class="club-sub">Strafenkatalog 2026/2027</div>
-    <div class="valid">1. Mannschaft · Gültig ab 10.07.2026</div>
+    <div class="valid">1. Mannschaft · Gültig ab 31.07.2026</div>
 
     <div class="scoreboard">
       <div class="label">Kassenstand · gesamt eingesammelt</div>
@@ -248,10 +345,17 @@
     ⚠ Speichern fehlgeschlagen — bitte Internetverbindung prüfen und erneut versuchen.
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="katalog">Regelwerk</div>
-    <div class="tab" data-tab="spieler">Strafen</div>
-    <div class="tab" data-tab="training">Training</div>
+  <div class="menu-row" style="position:relative;">
+    <div class="tabs">
+      <div class="tab active" data-tab="katalog">Regelwerk</div>
+      <div class="tab" data-tab="spieler">Strafen</div>
+      <div class="tab" data-tab="training">Training</div>
+    </div>
+    <div class="menu-btn" id="menuBtn">☰</div>
+    <div class="menu-dropdown" id="menuDropdown">
+      <div class="menu-item" data-tab="historie">📜 Historie</div>
+      <div class="menu-item" data-tab="statistik">📊 Statistik</div>
+    </div>
   </div>
 
   <!-- ================= KATALOG ================= -->
@@ -306,7 +410,7 @@
 
     <div class="card">
       <h2><span class="n">5</span>Zahlungsregeln &amp; Sanktionen</h2>
-      <div class="note" style="margin-top:0;">Strafen sind unaufgefordert bei den Kassierern zu melden &amp; zu begleichen — zuerst <b style="color:var(--off-white)">Gabo</b>, dann <b style="color:var(--off-white)">Erencan</b> ansprechen. Offene Strafen kosten pro Verpassen <b style="color:var(--crimson-bright)">+2 €</b>, bis sie bezahlt wurden, und lösen zusätzlich aus:</div>
+      <div class="note" style="margin-top:0;">Strafen sind unaufgefordert bei den Kassierern zu melden &amp; zu begleichen — zuerst <b style="color:var(--off-white)">Gabo</b>, dann <b style="color:var(--off-white)">Erencan</b> ansprechen. Ab Aussprache läuft eine Zahlungsfrist von <b style="color:var(--gold-bright)">7 Tagen</b> — die App zeigt bei jeder offenen Strafe automatisch die verbleibende Zeit bzw. „überfällig seit …" an. Offene Strafen kosten pro Verpassen <b style="color:var(--crimson-bright)">+2 €</b>, bis sie bezahlt wurden, und lösen zusätzlich aus:</div>
       <div class="escalation">
         <div class="esc-item"><span class="thresh">ab 5 €</span> räumt der Spieler das nächste Training ab</div>
         <div class="esc-item"><span class="thresh">ab 15 €</span> bereitet der Spieler ein Essen fürs Team vor</div>
@@ -341,12 +445,8 @@
       <select id="fineRecordedBy">
         <option value="">— bitte wählen —</option>
       </select>
-      <label style="margin-top:14px;">Status</label>
-      <div class="status-toggle" id="fineStatusToggle">
-        <div class="status-opt active" data-val="open">offen</div>
-        <div class="status-opt" data-val="paid">bereits bezahlt</div>
-      </div>
-      <button class="btn" id="addFineBtn">Strafe hinzufügen</button>
+      <div class="note" style="margin-top:10px;">Neue Strafen werden immer als <b style="color:var(--crimson-bright)">offen</b> ausgesprochen. Bezahlt wird anschließend über das Häkchen bei der jeweiligen Strafe markiert.</div>
+      <button class="btn" id="addFineBtn">Strafe aussprechen</button>
     </div>
 
     <div class="card">
@@ -373,6 +473,51 @@
       <div class="grid-wrap" style="margin-top:12px;">
         <table class="tgrid" id="trainingGrid"></table>
       </div>
+    </div>
+  </div>
+
+  <!-- ================= HISTORIE ================= -->
+  <div class="panel" id="panel-historie">
+    <div class="card">
+      <h2>Historie</h2>
+      <div class="note" style="margin-top:0;">Vollständiges Protokoll: welche Strafe wann von wem ausgesprochen, bezahlt markiert, storniert oder mit Mahngebühr belegt wurde.</div>
+      <div id="historieList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ================= STATISTIK ================= -->
+  <div class="panel" id="panel-statistik">
+    <div class="card">
+      <h2>Statistik</h2>
+      <div class="stat-kpis">
+        <div class="stat-kpi"><div class="n" id="statCountFines">0</div><div class="l">Strafen</div></div>
+        <div class="stat-kpi"><div class="n" id="statAvgFine">0 €</div><div class="l">Ø je Strafe</div></div>
+        <div class="stat-kpi"><div class="n" id="statCancelled">0</div><div class="l">Storniert</div></div>
+      </div>
+      <div class="stat-label"><span>Bezahlt vs. offen</span></div>
+      <div class="stat-split" id="statSplit"></div>
+      <div class="stat-label" style="margin-top:4px;"><span id="statSplitLabel"></span></div>
+    </div>
+    <div class="card">
+      <h2>Top 5 Spieler nach Strafsumme</h2>
+      <div id="statTopPlayers"></div>
+    </div>
+    <div class="card">
+      <h2>Strafen nach Kategorie</h2>
+      <div id="statCategories"></div>
+    </div>
+    <div class="card">
+      <h2>Längste Trainingsserie aktuell</h2>
+      <div id="statStreaks"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="actorModal">
+    <div class="modal-sheet">
+      <div class="modal-title" id="actorModalTitle">Wer nimmt die Änderung vor?</div>
+      <div class="modal-sub" id="actorModalSub"></div>
+      <div id="actorModalButtons"></div>
+      <button class="modal-cancel" id="actorModalCancel">Abbrechen</button>
     </div>
   </div>
 
@@ -433,7 +578,10 @@ const RULES = [
   {cat:"Sonstiges", txt:"Frei / Sonstige Strafe", amt:0},
 ];
 
-let fines = [];      // {id, player, cat, txt, amt, date, note, paid, recordedBy, recordedAt}
+const PAYMENT_DEADLINE_DAYS = 7; // Zahlungsfrist ab Aussprache der Strafe (danach "überfällig")
+
+let fines = [];      // {id, player, cat, txt, amt, date, note, paid, cancelled, recordedBy, recordedAt}
+let history = [];    // {id, ts, actor, action, player, amt, ruleTxt, note}
 let training = {sessions: [], attendance: {}}; // attendance[player][sessionDate]=true
 let selectedPlayer = null;
 let storageReady = false;
@@ -444,6 +592,27 @@ function formatTimestamp(iso){
     const d = new Date(iso);
     return d.toLocaleDateString('de-DE') + " " + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + " Uhr";
   }catch(e){ return ''; }
+}
+function daysSince(dateStr){
+  try{
+    const then = new Date(dateStr+"T00:00:00");
+    const now = new Date();
+    return Math.max(0, Math.floor((now-then)/86400000));
+  }catch(e){ return 0; }
+}
+function dueInfo(dateStr){
+  const open = daysSince(dateStr);
+  const remaining = PAYMENT_DEADLINE_DAYS - open;
+  if(remaining > 0) return {state:'ok', remaining, label:`noch ${remaining} Tag${remaining===1?'':'e'} zum Zahlen`};
+  if(remaining === 0) return {state:'today', remaining, label:`heute fällig — letzter Tag!`};
+  return {state:'overdue', remaining, label:`überfällig seit ${-remaining} Tag${-remaining===1?'':'en'}`};
+}
+function logHistory(action, {player=null, amt=null, ruleTxt=null, actor, note=null}={}){
+  history.push({
+    id: Date.now()+"_"+Math.random().toString(36).slice(2,7),
+    ts: new Date().toISOString(),
+    actor, action, player, amt, ruleTxt, note
+  });
 }
 
 // ======================================================================
@@ -521,6 +690,7 @@ async function loadData(){
       const data = snap.data();
       fines = data.fines || [];
       training = data.training || {sessions:[], attendance:{}};
+      history = data.history || [];
     }
     firebaseOnline = true;
   }catch(e){
@@ -537,6 +707,7 @@ async function loadData(){
     const data = snap.data();
     fines = data.fines || [];
     training = data.training || {sessions:[], attendance:{}};
+    history = data.history || [];
     firebaseOnline = true;
     showModeBanner();
     renderAll();
@@ -550,7 +721,7 @@ async function loadData(){
 async function persist(){
   if(!firebaseConfigured || !db) return true; // nothing to persist to yet — data stays in memory this session
   try{
-    await docRef.set({fines, training}, {merge:true});
+    await docRef.set({fines, training, history}, {merge:true});
     firebaseOnline = true;
     showModeBanner();
     return true;
@@ -564,22 +735,49 @@ async function persist(){
 
 async function saveFines(){ return await persist(); }
 async function saveTraining(){ return await persist(); }
+async function saveHistory(){ return await persist(); }
 
 // Adds a fine optimistically. Only rolls back if Firebase is configured & online
 // but genuinely rejected the write — never rolls back just because it's unavailable.
 async function addFine(fineObj){
   fines.push(fineObj);
+  const histId = Date.now()+"_"+Math.random().toString(36).slice(2,7);
+  history.push({id:histId, ts:new Date().toISOString(), actor:fineObj.recordedBy, action:'erstellt', player:fineObj.player, amt:fineObj.amt, ruleTxt:fineObj.txt, note:null});
   const ok = await saveFines();
   if(!ok && firebaseConfigured){
     fines = fines.filter(f=>f.id!==fineObj.id);
+    history = history.filter(h=>h.id!==histId);
     alert('Die Strafe konnte nicht gespeichert werden. Bitte erneut versuchen.');
   }
   return true; // keep entry visible locally even if remote persistence failed
 }
 
+// ---------- ACTOR PICKER MODAL ----------
+function pickActor(title, sub){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('actorModal');
+    document.getElementById('actorModalTitle').textContent = title;
+    document.getElementById('actorModalSub').textContent = sub || '';
+    const btnWrap = document.getElementById('actorModalButtons');
+    btnWrap.innerHTML = RECORDERS.map(p=>`<button type="button" class="modal-actor-btn" data-actor="${p}">${p}</button>`).join('');
+    const cleanup = (val)=>{
+      overlay.classList.remove('open');
+      btnWrap.querySelectorAll('.modal-actor-btn').forEach(b=>b.onclick=null);
+      cancelBtn.onclick = null;
+      resolve(val);
+    };
+    btnWrap.querySelectorAll('.modal-actor-btn').forEach(b=>{
+      b.onclick = ()=>cleanup(b.dataset.actor);
+    });
+    const cancelBtn = document.getElementById('actorModalCancel');
+    cancelBtn.onclick = ()=>cleanup(null);
+    overlay.classList.add('open');
+  });
+}
+
 // ---------- MANUAL BACKUP (export/import) ----------
 function getBackupBlob(){
-  return JSON.stringify({fines, training, exportedAt: new Date().toISOString()}, null, 0);
+  return JSON.stringify({fines, training, history, exportedAt: new Date().toISOString()}, null, 0);
 }
 
 document.getElementById('exportBtn').addEventListener('click', async ()=>{
@@ -624,6 +822,7 @@ document.getElementById('applyImportBtn').addEventListener('click', async ()=>{
   if(!confirm('Aktuelle Daten in dieser Ansicht durch die Sicherung ersetzen?')) return;
   fines = parsed.fines;
   training = parsed.training;
+  history = Array.isArray(parsed.history) ? parsed.history : [];
   await saveFines();
   await saveTraining();
   ta.style.display = 'none';
@@ -632,14 +831,35 @@ document.getElementById('applyImportBtn').addEventListener('click', async ()=>{
   alert('Sicherung eingespielt.');
 });
 
-// ---------- TABS ----------
+// ---------- TABS & MENU ----------
+function activatePanel(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.menu-item').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const panel = document.getElementById('panel-'+name);
+  if(panel) panel.classList.add('active');
+  document.getElementById('menuDropdown').classList.remove('open');
+  document.getElementById('menuBtn').classList.remove('active');
+}
 document.querySelectorAll('.tab').forEach(tab=>{
-  tab.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
-  });
+  tab.addEventListener('click', ()=> activatePanel(tab.dataset.tab));
+});
+document.querySelectorAll('.menu-item').forEach(item=>{
+  item.addEventListener('click', ()=> activatePanel(item.dataset.tab));
+});
+document.getElementById('menuBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const dd = document.getElementById('menuDropdown');
+  const willOpen = !dd.classList.contains('open');
+  dd.classList.toggle('open', willOpen);
+  document.getElementById('menuBtn').classList.toggle('active', willOpen);
+});
+document.addEventListener('click', (e)=>{
+  const dd = document.getElementById('menuDropdown');
+  if(dd.classList.contains('open') && !dd.contains(e.target) && e.target.id!=='menuBtn'){
+    dd.classList.remove('open');
+    document.getElementById('menuBtn').classList.remove('active');
+  }
 });
 
 // ---------- INIT FORM OPTIONS ----------
@@ -663,13 +883,6 @@ function initFormOptions(){
   });
   document.getElementById('fineAmount').value = RULES[0].amt;
   document.getElementById('fineDate').valueAsDate = new Date();
-
-  document.querySelectorAll('#fineStatusToggle .status-opt').forEach(opt=>{
-    opt.addEventListener('click', ()=>{
-      document.querySelectorAll('#fineStatusToggle .status-opt').forEach(o=>o.classList.remove('active'));
-      opt.classList.add('active');
-    });
-  });
 }
 
 document.getElementById('addFineBtn').addEventListener('click', async ()=>{
@@ -683,21 +896,18 @@ document.getElementById('addFineBtn').addEventListener('click', async ()=>{
   if(amt<=0){ alert('Bitte einen Betrag > 0 eingeben.'); return; }
   if(!recordedBy){ alert('Bitte auswählen, wer die Strafe erfasst.'); return; }
   const recordedAt = new Date().toISOString();
-  const activeStatus = document.querySelector('#fineStatusToggle .status-opt.active');
-  const paid = activeStatus ? activeStatus.dataset.val === 'paid' : false;
-  const ok = await addFine({id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player, cat:rule.cat, txt:rule.txt, amt, date, note, paid, recordedBy, recordedAt});
+  const ok = await addFine({id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player, cat:rule.cat, txt:rule.txt, amt, date, note, paid:false, cancelled:false, recordedBy, recordedAt});
   if(!ok) return;
   document.getElementById('fineNote').value='';
   document.getElementById('fineRecordedBy').value='';
-  document.querySelectorAll('#fineStatusToggle .status-opt').forEach(o=>o.classList.remove('active'));
-  document.querySelector('#fineStatusToggle .status-opt[data-val="open"]').classList.add('active');
   renderAll();
 });
 
 // ---------- RENDER: TOTALS ----------
 function renderTotals(){
-  const total = fines.reduce((s,f)=>s+f.amt,0);
-  const paid = fines.filter(f=>f.paid).reduce((s,f)=>s+f.amt,0);
+  const active = fines.filter(f=>!f.cancelled);
+  const total = active.reduce((s,f)=>s+f.amt,0);
+  const paid = active.filter(f=>f.paid).reduce((s,f)=>s+f.amt,0);
   const open = total-paid;
   document.getElementById('totalDigits').textContent = fmt(total);
   document.getElementById('paidAmt').textContent = fmt(paid);
@@ -717,12 +927,14 @@ function consequenceForOpenAmt(amt){
 function renderPlayerList(){
   const list = document.getElementById('playerList');
   list.innerHTML = PLAYERS.map(p=>{
-    const pf = fines.filter(f=>f.player===p);
+    const pf = fines.filter(f=>f.player===p && !f.cancelled);
     const total = pf.reduce((s,f)=>s+f.amt,0);
-    const open = pf.filter(f=>!f.paid).reduce((s,f)=>s+f.amt,0);
+    const openFines = pf.filter(f=>!f.paid);
+    const open = openFines.reduce((s,f)=>s+f.amt,0);
     const cons = consequenceForOpenAmt(open);
+    const hasOverdue = openFines.some(f=>dueInfo(f.date).state==='overdue');
     return `<div class="player-row" data-player="${p}">
-      <span class="pname">${p}${cons?`<span class="badge-consequence">${cons}</span>`:''}</span>
+      <span class="pname">${p}${hasOverdue?'<span class="badge-consequence" style="background:var(--crimson-bright);">⏰ überfällig</span>':''}${cons?`<span class="badge-consequence">${cons}</span>`:''}</span>
       <span class="ptotal ${total>0?'pos':'zero'}">${fmt(total)}</span>
     </div>`;
   }).join('');
@@ -744,37 +956,63 @@ function renderPlayerDetail(){
   if(pf.length===0){
     entriesDiv.innerHTML = `<div class="empty">Keine Strafen erfasst.</div>`;
   }else{
-    entriesDiv.innerHTML = pf.map(f=>`
-      <div class="fine-entry" data-id="${f.id}">
+    entriesDiv.innerHTML = pf.map(f=>{
+      const isOpenActive = !f.paid && !f.cancelled;
+      const due = isOpenActive ? dueInfo(f.date) : null;
+      return `
+      <div class="fine-entry ${f.cancelled?'cancelled':''}" data-id="${f.id}">
         <div class="top">
-          <span>${f.txt}</span>
+          <span>${f.txt}${f.cancelled?'<span class="badge-storniert">storniert</span>':''}</span>
           <span class="amt">${fmt(f.amt)}</span>
         </div>
         <div class="meta">${f.cat} · ${f.date}${f.note?(' · '+f.note):''}</div>
         <div class="meta" style="margin-top:2px;">erfasst von <b style="color:var(--off-white)">${f.recordedBy||'—'}</b>${f.recordedAt?(' · '+formatTimestamp(f.recordedAt)):''}</div>
+        ${isOpenActive ? `<div class="due-badge due-${due.state}">${due.state==='overdue'?'⏰ ':(due.state==='today'?'⚠ ':'')}${due.label}</div>` : ''}
         <div class="actions">
-          <span class="chip ${f.paid?'paid':'unpaid'}" data-action="toggle">${f.paid?'✓ bezahlt':'offen'}</span>
-          <span class="chip del" data-action="del">löschen</span>
+          ${!f.cancelled ? `<span class="chip ${f.paid?'paid':'unpaid'}" data-action="toggle">${f.paid?'✓ bezahlt':'☐ als bezahlt markieren'}</span>` : ''}
+          ${isOpenActive ? `<span class="chip mahn" data-action="mahn">+2€ Mahngebühr</span>` : ''}
+          <span class="chip storno" data-action="storno">${f.cancelled?'Storno aufheben':'stornieren'}</span>
         </div>
       </div>
-    `).join('');
+    `}).join('');
     entriesDiv.querySelectorAll('.fine-entry').forEach(el=>{
       const id = el.dataset.id;
-      el.querySelector('[data-action="toggle"]').addEventListener('click', async ()=>{
+      const toggleBtn = el.querySelector('[data-action="toggle"]');
+      if(toggleBtn) toggleBtn.addEventListener('click', async ()=>{
         const f = fines.find(x=>x.id===id);
-        f.paid = !f.paid;
+        const willBePaid = !f.paid;
+        const actor = await pickActor(willBePaid ? 'Wer bestätigt die Zahlung?' : 'Wer markiert die Strafe als offen?', `${f.player} · ${f.txt} · ${fmt(f.amt)}`);
+        if(!actor) return;
+        f.paid = willBePaid;
+        logHistory(willBePaid?'bezahlt markiert':'als offen markiert', {player:f.player, amt:f.amt, ruleTxt:f.txt, actor});
         await saveFines();
         renderAll();
       });
-      el.querySelector('[data-action="del"]').addEventListener('click', async ()=>{
-        if(!confirm('Diese Strafe löschen?')) return;
-        fines = fines.filter(x=>x.id!==id);
+      const mahnBtn = el.querySelector('[data-action="mahn"]');
+      if(mahnBtn) mahnBtn.addEventListener('click', async ()=>{
+        const f = fines.find(x=>x.id===id);
+        const actor = await pickActor('Wer trägt die Mahngebühr ein?', `Offene Strafe verpasst: ${f.player} · ${f.txt}`);
+        if(!actor) return;
+        const newFine = {id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player:f.player, cat:'Sonstiges', txt:'Offene Strafe nicht beglichen (Mahngebühr pro Verpassen)', amt:2, date:new Date().toISOString().slice(0,10), note:`bezieht sich auf: ${f.txt} vom ${f.date}`, paid:false, cancelled:false, recordedBy:actor, recordedAt:new Date().toISOString()};
+        fines.push(newFine);
+        logHistory('mahngebühr', {player:f.player, amt:2, ruleTxt:`Mahngebühr zu „${f.txt}“`, actor});
+        await saveFines();
+        renderAll();
+      });
+      el.querySelector('[data-action="storno"]').addEventListener('click', async ()=>{
+        const f = fines.find(x=>x.id===id);
+        const willCancel = !f.cancelled;
+        const actor = await pickActor(willCancel ? 'Wer storniert diese Strafe?' : 'Wer hebt das Storno auf?', `${f.player} · ${f.txt} · ${fmt(f.amt)}`);
+        if(!actor) return;
+        if(willCancel && !confirm('Diese Strafe wirklich stornieren? Sie zählt danach nicht mehr im Kassenstand, bleibt aber in der Historie sichtbar.')) return;
+        f.cancelled = willCancel;
+        logHistory(willCancel?'storniert':'storno rückgängig', {player:f.player, amt:f.amt, ruleTxt:f.txt, actor});
         await saveFines();
         renderAll();
       });
     });
   }
-  const open = pf.filter(f=>!f.paid).reduce((s,f)=>s+f.amt,0);
+  const open = pf.filter(f=>!f.paid && !f.cancelled).reduce((s,f)=>s+f.amt,0);
   const cons = consequenceForOpenAmt(open);
   document.getElementById('playerConsequenceNote').textContent = cons ? `Offene Strafen: ${fmt(open)} → ${cons}.` : (open>0 ? `Offene Strafen: ${fmt(open)}.` : '');
 }
@@ -839,22 +1077,107 @@ document.getElementById('resetAll').addEventListener('click', async ()=>{
   if(!confirm('Wirklich ALLE Strafen- und Trainingsdaten für das gesamte Team löschen? Das kann nicht rückgängig gemacht werden.')) return;
   fines = [];
   training = {sessions:[], attendance:{}};
+  history = [];
   await saveFines();
   await saveTraining();
   selectedPlayer = null;
   renderAll();
 });
 
+// ---------- HISTORIE ----------
+const HIST_ICON = {
+  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€'
+};
+const HIST_CLASS = {
+  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr'
+};
+function renderHistorie(){
+  const el = document.getElementById('historieList');
+  if(!el) return;
+  const items = [...history].sort((a,b)=> b.ts.localeCompare(a.ts));
+  if(items.length===0){ el.innerHTML = `<div class="empty">Noch keine Einträge.</div>`; return; }
+  el.innerHTML = items.map(h=>`
+    <div class="hist-entry">
+      <div class="hist-icon ${HIST_CLASS[h.action]||''}">${HIST_ICON[h.action]||'•'}</div>
+      <div class="hist-body">
+        <div class="hist-line"><b>${h.actor||'—'}</b> — ${h.action}${h.player?` · ${h.player}`:''}${h.amt!=null?` · ${fmt(h.amt)}`:''}</div>
+        <div class="hist-meta">${h.ruleTxt||''}${h.ts?(' · '+formatTimestamp(h.ts)):''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---------- STATISTIK ----------
+function renderStatistik(){
+  const countEl = document.getElementById('statCountFines');
+  if(!countEl) return;
+  const active = fines.filter(f=>!f.cancelled);
+  const cancelledCount = fines.filter(f=>f.cancelled).length;
+  const total = active.reduce((s,f)=>s+f.amt,0);
+  const paidSum = active.filter(f=>f.paid).reduce((s,f)=>s+f.amt,0);
+  const openSum = total-paidSum;
+
+  countEl.textContent = active.length;
+  document.getElementById('statAvgFine').textContent = active.length ? fmt(total/active.length) : '0 €';
+  document.getElementById('statCancelled').textContent = cancelledCount;
+
+  const paidPct = total>0 ? (paidSum/total*100) : 0;
+  document.getElementById('statSplit').innerHTML = total>0
+    ? `<div class="p" style="width:${paidPct}%"></div><div class="o" style="width:${100-paidPct}%"></div>`
+    : `<div class="o" style="width:100%"></div>`;
+  document.getElementById('statSplitLabel').textContent = `${fmt(paidSum)} bezahlt (${paidPct.toFixed(0)}%) · ${fmt(openSum)} offen`;
+
+  // Top players
+  const byPlayer = {};
+  active.forEach(f=>{ byPlayer[f.player] = (byPlayer[f.player]||0) + f.amt; });
+  const topPlayers = Object.entries(byPlayer).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxTop = topPlayers.length ? topPlayers[0][1] : 1;
+  document.getElementById('statTopPlayers').innerHTML = topPlayers.length ? topPlayers.map(([p,amt])=>`
+    <div class="stat-row">
+      <div class="stat-label"><span>${p}</span><span class="val">${fmt(amt)}</span></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill crimson" style="width:${(amt/maxTop*100).toFixed(0)}%"></div></div>
+    </div>
+  `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
+
+  // Categories
+  const byCat = {};
+  active.forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
+  const catEntries = Object.entries(byCat).sort((a,b)=>b[1].sum-a[1].sum);
+  const maxCat = catEntries.length ? Math.max(...catEntries.map(c=>c[1].sum)) : 1;
+  document.getElementById('statCategories').innerHTML = catEntries.length ? catEntries.map(([cat,d])=>`
+    <div class="stat-row">
+      <div class="stat-label"><span>${cat} <span style="color:var(--off-white-dim)">(${d.count}×)</span></span><span class="val">${fmt(d.sum)}</span></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${(d.sum/maxCat*100).toFixed(0)}%"></div></div>
+    </div>
+  `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
+
+  // Training streaks
+  const streaks = PLAYERS.map(p=>({p, s:currentStreak(p)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,5);
+  const maxStreak = streaks.length ? streaks[0].s : 1;
+  document.getElementById('statStreaks').innerHTML = streaks.length ? streaks.map(({p,s})=>`
+    <div class="stat-row">
+      <div class="stat-label"><span>${p}</span><span class="val">${s}×</span></div>
+      <div class="stat-bar-track"><div class="stat-bar-fill sage" style="width:${(s/maxStreak*100).toFixed(0)}%"></div></div>
+    </div>
+  `).join('') : `<div class="empty">Noch keine Trainingsserie aktiv.</div>`;
+}
+
 function renderAll(){
   renderTotals();
   renderPlayerList();
   renderPlayerDetail();
   renderTrainingGrid();
+  renderHistorie();
+  renderStatistik();
 }
 
 document.getElementById('crestImg').src = LOGO_SRC;
 initFormOptions();
 loadData();
+
+// Fälligkeits-Timer: hält "noch X Tage"/"überfällig seit X Tagen" automatisch aktuell,
+// auch wenn die Seite über Mitternacht hinweg geöffnet bleibt (kein Reload nötig).
+setInterval(()=>{ if(storageReady) renderAll(); }, 15*60*1000); // alle 15 Minuten
 </script>
 </body>
 </html>
