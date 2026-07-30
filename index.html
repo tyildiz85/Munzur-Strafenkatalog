@@ -397,21 +397,20 @@
       <div class="rule"><div class="txt">Müll in Kabine + Dusche (pro nominiertem Spieler)</div><div class="amt">5 €</div></div>
       <div class="rule"><div class="txt">Respektlosigkeit gg. Gegner/Schiri/Mitspieler/Trainer/Verein</div><div class="amt">40 €</div></div>
       <div class="rule"><div class="txt">Rauchen oder Trinken im Trikot</div><div class="amt">5 €</div></div>
-      <div class="rule"><div class="txt">Trikot nicht umgedreht & ordentlich abgelegt</div><div class="amt">10 €</div></div>
-      <div class="rule"><div class="txt">Hose / Stutzen / Aufwärmshirt nicht ordentlich</div><div class="amt">5 €</div></div>
+      <div class="rule"><div class="txt">Trikot nicht umgedreht & ordentlich abgelegt <span style="font-size:11px;color:var(--off-white-dim);">(Spieler wird anhand der Trikotnummer identifiziert)</span></div><div class="amt">10 €</div></div>
+      <div class="rule"><div class="txt">Hose / Stutzen / Aufwärmshirt nicht ordentlich (pro nominiertem Spieler)</div><div class="amt">2 €</div></div>
     </div>
 
     <div class="card">
       <h2><span class="n">3</span>Mannschaftssitzung Freitag <span style="font-size:11px;color:var(--off-white-dim);text-transform:none;font-family:Inter;">(Beginn 21:20 Uhr)</span></h2>
       <div class="rule"><div class="txt">Zu spät</div><div class="amt">5 € / 10 Min</div></div>
       <div class="rule"><div class="txt">Unentschuldigtes Nicht-Erscheinen</div><div class="amt">15 €</div></div>
-      <div class="rule"><div class="txt">Stören / Schwätzen / Nicht zuhören</div><div class="amt">4 €</div></div>
+      <div class="rule"><div class="txt">Stören / Schwätzen / Nicht zuhören</div><div class="amt">2 €</div></div>
       <div class="rule"><div class="txt">Handy klingelt / ablenkt</div><div class="amt">5 €</div></div>
     </div>
 
     <div class="card">
       <h2><span class="n">4</span>Belohnungssystem</h2>
-      <div class="rule"><div class="txt">5× pünktlich beim Training in Folge</div><div class="amt">+1 €</div></div>
       <div class="rule"><div class="txt">10× Teilnahme am Training in Folge</div><div class="amt">+5 €</div></div>
       <div class="rule"><div class="txt">15× Teilnahme am Training in Folge</div><div class="amt">+10 €</div></div>
       <div class="rule"><div class="txt">ab 20× Teilnahme am Training in Folge</div><div class="amt">+20 €</div></div>
@@ -483,7 +482,7 @@
   <div class="panel" id="panel-training">
     <div class="card">
       <h2>Trainingsbeteiligung</h2>
-      <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">5×</b> +1€ · <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
+      <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
       <div class="add-session-row">
         <input type="date" id="newSessionDate">
         <button class="btn secondary" id="addSessionBtn" style="width:auto;">+ Termin</button>
@@ -579,11 +578,11 @@ const RULES = [
   {cat:"Spiel", txt:"Müll in Kabine/Dusche hinterlassen", amt:5},
   {cat:"Spiel", txt:"Respektlosigkeit ggü. Gegner/Schiri/Team", amt:40},
   {cat:"Spiel", txt:"Rauchen/Trinken im Trikot", amt:5},
-  {cat:"Spiel", txt:"Trikot nicht ordentlich abgelegt", amt:10},
-  {cat:"Spiel", txt:"Hose/Stutzen/Aufwärmshirt nicht ordentlich", amt:5},
+  {cat:"Spiel", txt:"Trikot nicht ordentlich abgelegt (anhand Trikotnummer identifiziert)", amt:10},
+  {cat:"Spiel", txt:"Hose/Stutzen/Aufwärmshirt nicht ordentlich", amt:2},
   {cat:"Sitzung", txt:"Zu spät zur Mannschaftssitzung (pauschal)", amt:5},
   {cat:"Sitzung", txt:"Unentschuldigt nicht erschienen", amt:15},
-  {cat:"Sitzung", txt:"Stören/Schwätzen/Nicht zuhören", amt:4},
+  {cat:"Sitzung", txt:"Stören/Schwätzen/Nicht zuhören", amt:2},
   {cat:"Sitzung", txt:"Handy klingelt/lenkt ab", amt:5},
   {cat:"Sonstiges", txt:"Absage ohne Begründung", amt:5},
   {cat:"Sonstiges", txt:"Frei / Sonstige Strafe", amt:0},
@@ -996,7 +995,6 @@ function streakReward(streak){
   if(streak>=20) return {cls:'streak-hi', label:'+20€'};
   if(streak>=15) return {cls:'streak-hi', label:'+10€'};
   if(streak>=10) return {cls:'streak-mid', label:'+5€'};
-  if(streak>=5) return {cls:'streak-mid', label:'+1€'};
   return {cls:'streak-0', label:''};
 }
 
