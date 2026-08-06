@@ -341,13 +341,39 @@
   .due-badge.due-ok{color:var(--sage-bright);}
   .due-badge.due-today{color:var(--gold-bright);}
   .due-badge.due-overdue{color:var(--crimson-bright);}
-  .latest-fine-item{padding:9px 0; border-bottom:1px dashed var(--navy-line);}
+  .latest-fine-item{padding:10px 10px; border-bottom:1px dashed var(--navy-line); border-left:3px solid transparent; border-radius:0 6px 6px 0; margin-bottom:2px;}
   .latest-fine-item:last-child{border-bottom:none;}
+  .latest-fine-item.urg-overdue{border-left-color:var(--crimson-bright); background:rgba(193,68,60,.10); animation:pulseRow 1.6s ease-in-out infinite;}
+  .latest-fine-item.urg-today{border-left-color:var(--gold-bright); background:rgba(201,162,75,.08);}
+  .latest-fine-item.urg-ok{border-left-color:var(--sage);}
   .latest-fine-item .top2{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
   .latest-fine-item .pname2{font-weight:600; font-size:13.5px;}
   .latest-fine-item .rtxt{color:var(--off-white-dim); font-size:11.5px;}
   .latest-fine-item .amt2{font-family:'Space Mono'; font-weight:700; color:var(--gold-bright); font-size:13.5px;}
-  .latest-fine-item .due-big{font-family:'Space Mono'; font-weight:700; font-size:15px; margin-top:3px;}
+  .latest-fine-item .due-big{
+    font-family:'Space Mono'; font-weight:700; font-size:17px; margin-top:5px;
+    padding:5px 9px; border-radius:7px; display:inline-block; letter-spacing:.3px;
+  }
+  .latest-fine-item .due-big.due-overdue{background:rgba(193,68,60,.22); color:var(--crimson-bright); animation:pulseText 1.6s ease-in-out infinite;}
+  .latest-fine-item .due-big.due-today{background:rgba(201,162,75,.2); color:var(--gold-bright);}
+  .latest-fine-item .due-big.due-ok{background:rgba(76,154,114,.15); color:var(--sage-bright);}
+  @keyframes pulseRow{
+    0%,100%{box-shadow:0 0 0 0 rgba(193,68,60,.35);}
+    50%{box-shadow:0 0 0 5px rgba(193,68,60,0);}
+  }
+  @keyframes pulseText{
+    0%,100%{opacity:1;}
+    50%{opacity:.55;}
+  }
+  #latestFinesWidget.has-alarm{border-color:var(--crimson); box-shadow:0 0 0 1px rgba(193,68,60,.4), 0 14px 30px -14px rgba(193,68,60,.5);}
+  #latestFinesWidget .alarm-icon{display:inline-block; animation:shake 1.2s ease-in-out infinite;}
+  @keyframes shake{
+    0%,100%{transform:rotate(0deg);}
+    20%{transform:rotate(-8deg);}
+    40%{transform:rotate(8deg);}
+    60%{transform:rotate(-6deg);}
+    80%{transform:rotate(6deg);}
+  }
   .chip.mahn{background:rgba(201,162,75,.15); color:var(--gold-bright); border-color:var(--gold);}
   .chip.storno{background:rgba(255,255,255,.06); color:var(--off-white-dim);}
 
@@ -407,7 +433,7 @@
   </div>
 
   <div class="card" id="latestFinesWidget" style="margin-top:14px;">
-    <h2>⏱ Letzte 3 Strafen</h2>
+    <h2 id="latestFinesTitle">⏱ Letzte 3 Strafen</h2>
     <div id="latestFinesList"></div>
   </div>
 
@@ -1340,23 +1366,35 @@ function consequenceForOpenAmt(amt){
 
 function renderLatestFines(){
   const el = document.getElementById('latestFinesList');
+  const widget = document.getElementById('latestFinesWidget');
+  const title = document.getElementById('latestFinesTitle');
   if(!el) return;
   const list = fines.filter(f=>!f.cancelled && f.cat!=='Bonus').sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,3);
-  if(list.length===0){ el.innerHTML = `<div class="empty">Noch keine Strafen ausgesprochen.</div>`; return; }
+  if(list.length===0){
+    el.innerHTML = `<div class="empty">Noch keine Strafen ausgesprochen.</div>`;
+    widget.classList.remove('has-alarm');
+    title.innerHTML = '⏱ Letzte 3 Strafen';
+    return;
+  }
+  let anyOverdue = false;
   el.innerHTML = list.map(f=>{
     const isOpenActive = !f.paid;
     const due = isOpenActive ? dueInfo(f.date) : null;
-    return `<div class="latest-fine-item">
+    if(due && due.state==='overdue') anyOverdue = true;
+    const urgClass = !isOpenActive ? '' : (due.state==='overdue' ? 'urg-overdue' : (due.state==='today' ? 'urg-today' : 'urg-ok'));
+    return `<div class="latest-fine-item ${urgClass}">
       <div class="top2">
         <span class="pname2">${f.player}</span>
         <span class="amt2">${fmt(f.amt)}</span>
       </div>
       <div class="rtxt">${f.txt}</div>
       ${isOpenActive
-        ? `<div class="due-big due-${due.state}">${due.state==='overdue'?'⏰ ':(due.state==='today'?'⚠ ':'⏳ ')}${due.label}</div>`
-        : `<div class="due-big" style="color:var(--sage-bright);">✓ bereits bezahlt</div>`}
+        ? `<div class="due-big due-${due.state}">${due.state==='overdue'?'🚨 ':(due.state==='today'?'⚠ ':'⏳ ')}${due.label}</div>`
+        : `<div class="due-big due-ok">✓ bereits bezahlt</div>`}
     </div>`;
   }).join('');
+  widget.classList.toggle('has-alarm', anyOverdue);
+  title.innerHTML = anyOverdue ? '<span class="alarm-icon">🚨</span> Letzte 3 Strafen' : '⏱ Letzte 3 Strafen';
 }
 
 function renderRecentFines(){
@@ -1535,7 +1573,8 @@ function renderSessionPicker(){
 }
 
 function currentStreak(player){
-  const sessions = [...training.sessions].sort();
+  const todayStr = dstr(new Date());
+  const sessions = [...training.sessions].filter(s=>s<=todayStr).sort(); // zukünftige Termine zählen nicht gegen die Serie
   let streak = 0;
   for(let i=sessions.length-1;i>=0;i--){
     const s = sessions[i];
