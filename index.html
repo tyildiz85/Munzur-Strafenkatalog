@@ -608,6 +608,12 @@
       </div>
     </div>
 
+    <div class="card" id="rewardsCard" style="display:none;">
+      <h2>🎖 Prämien fällig</h2>
+      <div class="note" style="margin-top:0;">Automatisch berechnet aus der aktuellen Trainingsserie (10× +5€ · 15× +10€ · 20× +20€). Ein Klick verbucht die Gutschrift direkt in der Mannschaftskasse.</div>
+      <div id="rewardsList" style="margin-top:8px;"></div>
+    </div>
+
     <div class="card">
       <h2>🏆 Trainingsweltmeister <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">Top 10 · Gesamtzahl</span></h2>
       <div class="note" style="margin-top:0;">Rangliste nach der Gesamtzahl an Trainingsteilnahmen seit Saisonbeginn (unabhängig von Serien).</div>
@@ -1346,6 +1352,9 @@ function renderTotals(){
 }
 
 // ---------- RENDER: PLAYER LIST ----------
+const CREDIT_CATS = ['Bonus','Prämie'];
+function isCredit(f){ return CREDIT_CATS.includes(f.cat); }
+
 function bonusCountFor(player){
   return fines.filter(f=>f.player===player && f.cat==='Bonus' && !f.cancelled).length;
 }
@@ -1369,7 +1378,7 @@ function renderLatestFines(){
   const widget = document.getElementById('latestFinesWidget');
   const title = document.getElementById('latestFinesTitle');
   if(!el) return;
-  const list = fines.filter(f=>!f.cancelled && f.cat!=='Bonus').sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,3);
+  const list = fines.filter(f=>!f.cancelled && !isCredit(f)).sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,3);
   if(list.length===0){
     el.innerHTML = `<div class="empty">Noch keine Strafen ausgesprochen.</div>`;
     widget.classList.remove('has-alarm');
@@ -1400,7 +1409,7 @@ function renderLatestFines(){
 function renderRecentFines(){
   const el = document.getElementById('recentFines');
   if(!el) return;
-  const list = fines.filter(f=>!f.cancelled && f.cat!=='Bonus').sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,15);
+  const list = fines.filter(f=>!f.cancelled && !isCredit(f)).sort((a,b)=> (b.recordedAt||'').localeCompare(a.recordedAt||'')).slice(0,15);
   if(list.length===0){ el.innerHTML = `<div class="empty">Noch keine Strafen ausgesprochen.</div>`; return; }
   el.innerHTML = list.map(f=>{
     const isOpenActive = !f.paid;
@@ -1463,7 +1472,7 @@ function renderPlayerDetail(){
     entriesDiv.innerHTML = `<div class="empty">Keine Strafen erfasst.</div>`;
   }else{
     entriesDiv.innerHTML = pf.map(f=>{
-      const isBonus = f.cat==='Bonus';
+      const isBonus = isCredit(f);
       const isOpenActive = !f.paid && !f.cancelled;
       const due = isOpenActive ? dueInfo(f.date) : null;
       return `
@@ -1572,6 +1581,19 @@ function renderSessionPicker(){
   if(prevBtn) prevBtn.addEventListener('click', ()=>{ sessionPickerOffset = Math.max(0, sessionPickerOffset-5); renderSessionPicker(); });
 }
 
+// Belohnungssystem: 10x/15x/20x in Folge -> Prämie, verbunden mit der Mannschaftskasse
+const REWARD_TIERS = [{n:10, amt:5}, {n:15, amt:10}, {n:20, amt:20}];
+function pendingReward(player){
+  const streak = currentStreak(player);
+  let paid = (training.paidAtStreak && training.paidAtStreak[player]) || 0;
+  if(streak < paid) paid = 0; // Serie wurde seither unterbrochen und neu gestartet
+  const due = REWARD_TIERS.filter(t=> streak>=t.n && paid<t.n);
+  if(due.length===0) return null;
+  const sum = due.reduce((s,t)=>s+t.amt,0);
+  const maxN = Math.max(...due.map(t=>t.n));
+  return {sum, maxN};
+}
+
 function currentStreak(player){
   const todayStr = dstr(new Date());
   const sessions = [...training.sessions].filter(s=>s<=todayStr).sort(); // zukünftige Termine zählen nicht gegen die Serie
@@ -1588,6 +1610,38 @@ function totalAttendanceCount(player){
   if(!att) return 0;
   return Object.values(att).filter(Boolean).length;
 }
+function renderRewardsCard(){
+  const card = document.getElementById('rewardsCard');
+  const list = document.getElementById('rewardsList');
+  if(!card || !list) return;
+  const due = PLAYERS.map(p=>({p, r:pendingReward(p)})).filter(x=>x.r);
+  if(due.length===0){ card.style.display='none'; return; }
+  card.style.display='block';
+  list.innerHTML = due.map(({p,r})=>`
+    <div class="agenda-item">
+      <span>🎖 <b style="color:var(--off-white)">${p}</b> — ${r.maxN}× in Folge</span>
+      <span class="chip mahn" data-claim="${p}" data-sum="${r.sum}" data-n="${r.maxN}" style="cursor:pointer;">+${r.sum}€ Prämie aussprechen</span>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-claim]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const player = btn.dataset.claim;
+      const sum = parseFloat(btn.dataset.sum);
+      const n = parseInt(btn.dataset.n);
+      const actor = await pickActor('Wer spricht die Prämie aus?', `${player} · ${n}× in Folge · +${sum} €`);
+      if(!actor) return;
+      const newFine = {id: Date.now()+"_"+Math.random().toString(36).slice(2,7), player, cat:'Prämie', txt:`Trainingsprämie — ${n}× in Folge`, amt:-sum, date:new Date().toISOString().slice(0,10), note:'', paid:true, cancelled:false, recordedBy:actor, recordedAt:new Date().toISOString()};
+      fines.push(newFine);
+      if(!training.paidAtStreak) training.paidAtStreak = {};
+      training.paidAtStreak[player] = n;
+      logHistory('prämie ausgezahlt', {player, amt:-sum, ruleTxt:`Trainingsprämie ${n}× in Folge`, actor});
+      await saveFines();
+      await saveTraining();
+      renderAll();
+    });
+  });
+}
+
 function renderRankTable(elId, entries, unitLabel){
   const el = document.getElementById(elId);
   if(!el) return;
@@ -1659,10 +1713,10 @@ document.getElementById('resetAll').addEventListener('click', async ()=>{
 
 // ---------- HISTORIE ----------
 const HIST_ICON = {
-  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫'
+  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫', 'prämie ausgezahlt':'🎖'
 };
 const HIST_CLASS = {
-  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert'
+  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert', 'prämie ausgezahlt':'bezahlt'
 };
 function renderHistorie(){
   const el = document.getElementById('historieList');
@@ -1684,8 +1738,8 @@ function renderHistorie(){
 function renderStatistik(){
   const countEl = document.getElementById('statCountFines');
   if(!countEl) return;
-  const active = fines.filter(f=>!f.cancelled && f.cat!=='Bonus');
-  const cancelledCount = fines.filter(f=>f.cancelled && f.cat!=='Bonus').length;
+  const active = fines.filter(f=>!f.cancelled && !isCredit(f));
+  const cancelledCount = fines.filter(f=>f.cancelled && !isCredit(f)).length;
   const total = active.reduce((s,f)=>s+f.amt,0);
   const paidSum = active.filter(f=>f.paid).reduce((s,f)=>s+f.amt,0);
   const openSum = total-paidSum;
@@ -1702,7 +1756,7 @@ function renderStatistik(){
 
   // Top players (reine Strafen, Boni zählen hier nicht mit)
   const byPlayer = {};
-  active.filter(f=>f.cat!=='Bonus').forEach(f=>{ byPlayer[f.player] = (byPlayer[f.player]||0) + f.amt; });
+  active.filter(f=>!isCredit(f)).forEach(f=>{ byPlayer[f.player] = (byPlayer[f.player]||0) + f.amt; });
   const topPlayers = Object.entries(byPlayer).filter(([,amt])=>amt>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxTop = topPlayers.length ? topPlayers[0][1] : 1;
   document.getElementById('statTopPlayers').innerHTML = topPlayers.length ? topPlayers.map(([p,amt])=>`
@@ -1713,7 +1767,7 @@ function renderStatistik(){
   `).join('') : `<div class="empty">Noch keine Strafen erfasst.</div>`;
 
   // Boni-Übersicht
-  const bonusEntries = fines.filter(f=>!f.cancelled && f.cat==='Bonus');
+  const bonusEntries = fines.filter(f=>!f.cancelled && f.cat==='Bonus'); // reine Vorbildspieler-Boni (ohne Trainingsprämien)
   const bonusSum = bonusEntries.reduce((s,f)=>s+Math.abs(f.amt),0);
   document.getElementById('statBonusLine').textContent = bonusEntries.length
     ? `🏅 ${bonusEntries.length} Vorbildspieler-Bonus${bonusEntries.length===1?'':'se'} vergeben · insgesamt ${fmt(bonusSum)} Gutschrift`
@@ -1731,7 +1785,7 @@ function renderStatistik(){
 
   // Categories (ohne Bonus — nur echte Strafenarten)
   const byCat = {};
-  active.filter(f=>f.cat!=='Bonus').forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
+  active.filter(f=>!isCredit(f)).forEach(f=>{ byCat[f.cat] = byCat[f.cat] || {count:0, sum:0}; byCat[f.cat].count++; byCat[f.cat].sum += f.amt; });
   const catEntries = Object.entries(byCat).sort((a,b)=>b[1].sum-a[1].sum);
   const maxCat = catEntries.length ? Math.max(...catEntries.map(c=>c[1].sum)) : 1;
   document.getElementById('statCategories').innerHTML = catEntries.length ? catEntries.map(([cat,d])=>`
@@ -1760,6 +1814,7 @@ function renderAll(){
   renderRecentFines();
   renderTrainingGrid();
   renderSessionPicker();
+  renderRewardsCard();
   renderWorldChampTable();
   renderFormTable();
   renderHistorie();
