@@ -601,7 +601,7 @@
     <div class="card">
       <h2>Trainingsbeteiligung</h2>
       <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
-      <div class="note" style="margin-top:6px;">Nächste Trainingstermine antippen, um sie zur Tabelle hinzuzufügen (automatisch nach Mi/Fr-Rhythmus):</div>
+      <div class="note" style="margin-top:6px;">Nächste Trainingstermine antippen, um sie zur Tabelle hinzuzufügen (automatisch nach Mi/Fr-Rhythmus). <span class="reset-link" id="resetTraining">Trainingstabelle leeren (z. B. alte Testdaten entfernen)</span></div>
       <div class="session-picker" id="sessionPicker"></div>
       <div class="grid-wrap" style="margin-top:12px;">
         <table class="tgrid" id="trainingGrid"></table>
@@ -1711,12 +1711,23 @@ document.getElementById('resetAll').addEventListener('click', async ()=>{
   renderAll();
 });
 
+document.getElementById('resetTraining').addEventListener('click', async ()=>{
+  if(!confirm('Nur die Trainingstabelle leeren (Termine + Häkchen + Prämien-Fortschritt)? Strafen, Boni, Historie, Urlaube und Spiele bleiben unberührt.')) return;
+  const actor = await pickActor('Wer leert die Trainingstabelle?', 'Entfernt alle Trainingstermine, Häkchen und den Prämien-Fortschritt.');
+  if(!actor) return;
+  training = {sessions:[], attendance:{}, paidAtStreak:{}};
+  logHistory('training zurückgesetzt', {player:null, amt:null, ruleTxt:'Trainingstabelle komplett geleert (Testdaten entfernt)', actor});
+  await saveTraining();
+  sessionPickerOffset = 0;
+  renderAll();
+});
+
 // ---------- HISTORIE ----------
 const HIST_ICON = {
-  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫', 'prämie ausgezahlt':'🎖'
+  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫', 'prämie ausgezahlt':'🎖', 'training zurückgesetzt':'🗑'
 };
 const HIST_CLASS = {
-  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert', 'prämie ausgezahlt':'bezahlt'
+  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert', 'prämie ausgezahlt':'bezahlt', 'training zurückgesetzt':'storniert'
 };
 function renderHistorie(){
   const el = document.getElementById('historieList');
