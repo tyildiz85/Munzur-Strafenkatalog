@@ -222,6 +222,9 @@
   }
   .session-chip:active{background:rgba(201,162,75,.15); border-color:var(--gold);}
   .session-chip.arrow{background:var(--gold); color:#20180a; font-weight:700; border:none;}
+  table.tgrid th[data-cancel]{cursor:pointer;}
+  table.tgrid th.th-cancelled{opacity:.5; text-decoration:line-through;}
+  table.tgrid td.cell-cancel{color:var(--off-white-dim); opacity:.4;}
 
   .loading{text-align:center; padding:30px; color:var(--off-white-dim); font-size:13px;}
   .save-banner{
@@ -601,8 +604,8 @@
     <div class="card">
       <h2>Trainingsbeteiligung</h2>
       <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
-      <div class="note" style="margin-top:6px;">Nächste Trainingstermine antippen, um sie zur Tabelle hinzuzufügen (automatisch nach Mi/Fr-Rhythmus). <span class="reset-link" id="resetTraining">Trainingstabelle leeren (z. B. alte Testdaten entfernen)</span></div>
-      <div class="session-picker" id="sessionPicker"></div>
+      <div class="note" style="margin-top:6px;">Alle Trainingstage (Mi &amp; Fr) erscheinen automatisch in der Tabelle. Fällt ein Training aus, tippe auf das Datum in der Kopfzeile — dann zählt der Tag nicht gegen die Serie. <span class="reset-link" id="resetTraining">Trainingstabelle leeren (z. B. alte Testdaten entfernen)</span></div>
+      <div class="session-picker" id="trainingPager" style="align-items:center;"></div>
       <div class="grid-wrap" style="margin-top:12px;">
         <table class="tgrid" id="trainingGrid"></table>
       </div>
@@ -996,6 +999,23 @@ async function persist(){
   }
 }
 
+// Überschreibt die genannten Felder komplett (kein Zusammenführen verschachtelter Daten) –
+// nötig, damit z. B. "Trainingstabelle leeren" die Häkchen in der Datenbank wirklich entfernt.
+async function persistReplace(fields){
+  if(!firebaseConfigured || !db) return true;
+  try{
+    await docRef.set({fines, training, history, absences, games}, {mergeFields: fields});
+    firebaseOnline = true;
+    showModeBanner();
+    return true;
+  }catch(e){
+    console.error('Firestore replace failed', e);
+    firebaseOnline = false;
+    showModeBanner();
+    return false;
+  }
+}
+
 async function saveFines(){ return await persist(); }
 async function saveTraining(){ return await persist(); }
 async function saveHistory(){ return await persist(); }
@@ -1216,11 +1236,14 @@ function absencesOn(dateStr){
 function gamesOn(dateStr){
   return [...SEASON_GAMES, ...games].filter(g=> g.date===dateStr);
 }
-function trainingOn(dateStr){
+function trainingScheduledOn(dateStr){
   const d = new Date(dateStr+"T00:00:00");
   const dow = d.getDay(); // 3 = Mittwoch, 5 = Freitag
   if(dow!==3 && dow!==5) return false;
   return TRAINING_PERIODS.some(p=> dateStr>=p.start && dateStr<=p.end);
+}
+function trainingOn(dateStr){
+  return trainingScheduledOn(dateStr) && !isTrainingCancelled(dateStr);
 }
 
 document.getElementById('calPrev').addEventListener('click', ()=>{
@@ -1281,13 +1304,15 @@ function renderCalendar(){
     const abs = absencesOn(selectedCalDate);
     const gm = gamesOn(selectedCalDate);
     const trn = trainingOn(selectedCalDate);
-    if(abs.length===0 && gm.length===0 && !trn){
+    const trnCancelled = trainingScheduledOn(selectedCalDate) && !trn;
+    if(abs.length===0 && gm.length===0 && !trn && !trnCancelled){
       detail.style.display='block';
       detail.innerHTML = `<b style="color:var(--off-white)">${formatDateDE(selectedCalDate)}</b><div class="empty" style="padding:6px 0;">Keine Einträge.</div>`;
     }else{
       detail.style.display='block';
       let inner = `<b style="color:var(--off-white)">${formatDateDE(selectedCalDate)}</b>`;
       if(trn) inner += `<div style="margin-top:6px;">🏋 <b>Training</b></div>`;
+      if(trnCancelled) inner += `<div style="margin-top:6px;">🚫 <b>Training abgesagt</b></div>`;
       gm.forEach(g=>{ inner += `<div style="margin-top:6px;">⚽ <b>${g.opponent}</b> (${g.location}${g.time?(', '+g.time+' Uhr'):''})</div>`; });
       abs.forEach(a=>{ inner += `<div style="margin-top:6px;">🏖 <b>${a.player}</b>${a.reason?(' — '+a.reason):''} <span style="color:var(--off-white-dim);">(${formatDateDE(a.from)}–${formatDateDE(a.to)})</span></div>`; });
       detail.innerHTML = inner;
@@ -1536,7 +1561,7 @@ function renderPlayerDetail(){
 }
 
 // ---------- TRAINING GRID ----------
-// ---------- TERMIN-SCHNELLAUSWAHL (Mi/Fr-Rhythmus, keine manuelle Dateneingabe nötig) ----------
+// ---------- TRAININGSTERMINE (automatisch aus dem Mi/Fr-Rhythmus) ----------
 function allScheduledTrainingDates(){
   const dates = [];
   TRAINING_PERIODS.forEach(p=>{
@@ -1550,35 +1575,40 @@ function allScheduledTrainingDates(){
   });
   return dates.sort();
 }
-let sessionPickerOffset = 0;
-function renderSessionPicker(){
-  const el = document.getElementById('sessionPicker');
-  if(!el) return;
-  const remaining = allScheduledTrainingDates().filter(d=>!training.sessions.includes(d));
-  if(sessionPickerOffset>0 && sessionPickerOffset>=remaining.length){ sessionPickerOffset = Math.max(0, remaining.length-5); }
-  const slice = remaining.slice(sessionPickerOffset, sessionPickerOffset+5);
-  if(remaining.length===0){ el.innerHTML = `<div class="empty">Alle geplanten Trainingstermine sind bereits in der Tabelle.</div>`; return; }
-  let html = '';
-  if(sessionPickerOffset>0) html += `<button type="button" class="session-chip arrow" id="sessionPickerPrev">‹</button>`;
-  html += slice.map(d=>`<button type="button" class="session-chip" data-date="${d}">${formatDateDE(d)}</button>`).join('');
-  if(sessionPickerOffset+5 < remaining.length) html += `<button type="button" class="session-chip arrow" id="sessionPickerNext">›</button>`;
-  el.innerHTML = html;
+function isTrainingCancelled(ds){ return (training.cancelledDates||[]).includes(ds); }
+// Alle Trainingstage bis einschließlich heute (Zukunft wird nicht als Spalte geführt)
+function pastTrainingDates(){
+  const todayStr = dstr(new Date());
+  const set = new Set(allScheduledTrainingDates().filter(d=>d<=todayStr));
+  (training.sessions||[]).forEach(d=>{ if(d<=todayStr) set.add(d); }); // Altbestand aus der manuellen Auswahl
+  return [...set].sort();
+}
+const WD_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+function weekdayShort(ds){ return WD_SHORT[new Date(ds+"T00:00:00").getDay()]; }
+function formatShortDE(ds){ return ds.slice(8,10)+'.'+ds.slice(5,7)+'.'; }
 
-  el.querySelectorAll('.session-chip[data-date]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const d = btn.dataset.date;
-      if(!training.sessions.includes(d)){
-        training.sessions.push(d);
-        training.sessions.sort();
-        await saveTraining();
-      }
-      renderAll();
-    });
-  });
-  const nextBtn = document.getElementById('sessionPickerNext');
-  if(nextBtn) nextBtn.addEventListener('click', ()=>{ sessionPickerOffset += 5; renderSessionPicker(); });
-  const prevBtn = document.getElementById('sessionPickerPrev');
-  if(prevBtn) prevBtn.addEventListener('click', ()=>{ sessionPickerOffset = Math.max(0, sessionPickerOffset-5); renderSessionPicker(); });
+const TRAINING_COLS = 6;   // so viele Termine zeigt die Tabelle auf einmal
+let trainingPage = 0;      // 0 = neueste Termine, höher = weiter zurück
+function trainingWindow(){
+  const all = pastTrainingDates();
+  const maxPage = Math.max(0, Math.ceil(all.length/TRAINING_COLS)-1);
+  if(trainingPage>maxPage) trainingPage = maxPage;
+  if(trainingPage<0) trainingPage = 0;
+  const end = all.length - trainingPage*TRAINING_COLS;
+  const start = Math.max(0, end-TRAINING_COLS);
+  return {all, maxPage, sessions: all.slice(start, end)};
+}
+function renderTrainingPager(){
+  const el = document.getElementById('trainingPager');
+  if(!el) return;
+  const {all, maxPage, sessions} = trainingWindow();
+  if(all.length===0){ el.innerHTML = '<div class="empty">Noch kein Training im Zeitraum.</div>'; return; }
+  const olderOff = trainingPage>=maxPage, newerOff = trainingPage<=0;
+  el.innerHTML = `<button type="button" class="session-chip arrow" id="trainOlder" ${olderOff?'disabled style="opacity:.3"':''}>‹</button>
+    <span style="flex:1; text-align:center; font-family:'Space Mono'; font-size:11.5px; color:var(--off-white-dim);">${formatShortDE(sessions[0])} – ${formatShortDE(sessions[sessions.length-1])}</span>
+    <button type="button" class="session-chip arrow" id="trainNewer" ${newerOff?'disabled style="opacity:.3"':''}>›</button>`;
+  document.getElementById('trainOlder').addEventListener('click', ()=>{ if(trainingPage<maxPage){ trainingPage++; renderTrainingPager(); renderTrainingGrid(); } });
+  document.getElementById('trainNewer').addEventListener('click', ()=>{ if(trainingPage>0){ trainingPage--; renderTrainingPager(); renderTrainingGrid(); } });
 }
 
 // Belohnungssystem: 10x/15x/20x in Folge -> Prämie, verbunden mit der Mannschaftskasse
@@ -1596,11 +1626,13 @@ function pendingReward(player){
 
 function currentStreak(player){
   const todayStr = dstr(new Date());
-  const sessions = [...training.sessions].filter(s=>s<=todayStr).sort(); // zukünftige Termine zählen nicht gegen die Serie
+  const sessions = pastTrainingDates().filter(s=>!isTrainingCancelled(s)); // abgesagte Termine zählen nicht
   let streak = 0;
   for(let i=sessions.length-1;i>=0;i--){
     const s = sessions[i];
-    if(training.attendance[player] && training.attendance[player][s]){ streak++; }
+    const present = training.attendance[player] && training.attendance[player][s];
+    if(present){ streak++; }
+    else if(s===todayStr){ continue; } // heutiges Training noch nicht eingetragen: noch nicht gegen die Serie werten
     else break;
   }
   return streak;
@@ -1671,10 +1703,14 @@ function streakReward(streak){
 
 function renderTrainingGrid(){
   const table = document.getElementById('trainingGrid');
-  const sessions = training.sessions;
-  let thead = `<tr><th class="pname-cell">Spieler</th>${sessions.map(s=>`<th>${s.slice(5)}</th>`).join('')}<th>Serie</th></tr>`;
-  let rows = PLAYERS.map(p=>{
+  const {sessions} = trainingWindow();
+  const thead = `<tr><th class="pname-cell">Spieler</th>${sessions.map(s=>{
+    const c = isTrainingCancelled(s);
+    return `<th data-cancel="${s}" class="${c?'th-cancelled':''}" title="${c?'Training wieder ansetzen':'Training absagen'}"><div>${weekdayShort(s)}</div><div>${formatShortDE(s)}</div></th>`;
+  }).join('')}<th>Serie</th></tr>`;
+  const rows = PLAYERS.map(p=>{
     const cells = sessions.map(s=>{
+      if(isTrainingCancelled(s)) return `<td class="cell-cancel">–</td>`;
       const present = training.attendance[p] && training.attendance[p][s];
       return `<td class="${present?'cell-x':'cell-empty'}" data-player="${p}" data-session="${s}">${present?'✓':'·'}</td>`;
     }).join('');
@@ -1683,6 +1719,21 @@ function renderTrainingGrid(){
     return `<tr><td class="pname-cell">${p}</td>${cells}<td><span class="streak-badge ${rw.cls}">${streak}${rw.label?(' '+rw.label):''}</span></td></tr>`;
   }).join('');
   table.innerHTML = thead+rows;
+
+  table.querySelectorAll('th[data-cancel]').forEach(th=>{
+    th.addEventListener('click', async ()=>{
+      const s = th.dataset.cancel;
+      const nowCancelled = !isTrainingCancelled(s);
+      const actor = await pickActor(nowCancelled ? 'Wer sagt das Training ab?' : 'Wer setzt das Training wieder an?', `Training am ${formatDateDE(s)}`);
+      if(!actor) return;
+      if(!training.cancelledDates) training.cancelledDates = [];
+      if(nowCancelled) training.cancelledDates.push(s);
+      else training.cancelledDates = training.cancelledDates.filter(d=>d!==s);
+      logHistory(nowCancelled?'training abgesagt':'training wieder angesetzt', {player:null, amt:null, ruleTxt:`Training am ${formatDateDE(s)}`, actor});
+      await saveTraining();
+      renderAll();
+    });
+  });
 
   table.querySelectorAll('td[data-session]').forEach(td=>{
     td.addEventListener('click', async ()=>{
@@ -1703,31 +1754,30 @@ function renderTrainingGrid(){
 document.getElementById('resetAll').addEventListener('click', async ()=>{
   if(!confirm('Wirklich ALLE Strafen- und Trainingsdaten für das gesamte Team löschen? Das kann nicht rückgängig gemacht werden.')) return;
   fines = [];
-  training = {sessions:[], attendance:{}};
+  training = {sessions:[], attendance:{}, paidAtStreak:{}, cancelledDates:[]};
   history = [];
-  await saveFines();
-  await saveTraining();
+  await persistReplace(['fines','training','history']);
   selectedPlayer = null;
   renderAll();
 });
 
 document.getElementById('resetTraining').addEventListener('click', async ()=>{
-  if(!confirm('Nur die Trainingstabelle leeren (Termine + Häkchen + Prämien-Fortschritt)? Strafen, Boni, Historie, Urlaube und Spiele bleiben unberührt.')) return;
-  const actor = await pickActor('Wer leert die Trainingstabelle?', 'Entfernt alle Trainingstermine, Häkchen und den Prämien-Fortschritt.');
+  if(!confirm('Nur die Trainingstabelle leeren (alle Häkchen + Prämien-Fortschritt)? Strafen, Boni, Historie, Urlaube, Spiele und Trainings-Absagen bleiben unberührt.')) return;
+  const actor = await pickActor('Wer leert die Trainingstabelle?', 'Entfernt alle Häkchen und den Prämien-Fortschritt.');
   if(!actor) return;
-  training = {sessions:[], attendance:{}, paidAtStreak:{}};
-  logHistory('training zurückgesetzt', {player:null, amt:null, ruleTxt:'Trainingstabelle komplett geleert (Testdaten entfernt)', actor});
-  await saveTraining();
-  sessionPickerOffset = 0;
+  training = {sessions:[], attendance:{}, paidAtStreak:{}, cancelledDates: training.cancelledDates||[]};
+  logHistory('training zurückgesetzt', {player:null, amt:null, ruleTxt:'Trainingstabelle komplett geleert (alle Häkchen entfernt)', actor});
+  await persistReplace(['training','history']);
+  trainingPage = 0;
   renderAll();
 });
 
 // ---------- HISTORIE ----------
 const HIST_ICON = {
-  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫', 'prämie ausgezahlt':'🎖', 'training zurückgesetzt':'🗑'
+  'erstellt':'⚠', 'bezahlt markiert':'✓', 'als offen markiert':'↺', 'storniert':'✕', 'storno rückgängig':'↺', 'mahngebühr':'+2€', 'bonus vergeben':'🏅', 'training eingetragen':'🏋', 'training entfernt':'🚫', 'prämie ausgezahlt':'🎖', 'training zurückgesetzt':'🗑', 'training abgesagt':'🚫', 'training wieder angesetzt':'↺'
 };
 const HIST_CLASS = {
-  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert', 'prämie ausgezahlt':'bezahlt', 'training zurückgesetzt':'storniert'
+  'erstellt':'erstellt', 'bezahlt markiert':'bezahlt', 'als offen markiert':'bezahlt', 'storniert':'storniert', 'storno rückgängig':'storniert', 'mahngebühr':'mahngebuehr', 'bonus vergeben':'bezahlt', 'training eingetragen':'bezahlt', 'training entfernt':'storniert', 'prämie ausgezahlt':'bezahlt', 'training zurückgesetzt':'storniert', 'training abgesagt':'storniert', 'training wieder angesetzt':'bezahlt'
 };
 function renderHistorie(){
   const el = document.getElementById('historieList');
@@ -1824,7 +1874,7 @@ function renderAll(){
   renderPlayerDetail();
   renderRecentFines();
   renderTrainingGrid();
-  renderSessionPicker();
+  renderTrainingPager();
   renderRewardsCard();
   renderWorldChampTable();
   renderFormTable();
