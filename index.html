@@ -225,6 +225,9 @@
   table.tgrid th[data-cancel]{cursor:pointer;}
   table.tgrid th.th-cancelled{opacity:.5; text-decoration:line-through;}
   table.tgrid td.cell-cancel{color:var(--off-white-dim); opacity:.4;}
+  table.tgrid td.cell-future{color:var(--navy-line); background:rgba(0,0,0,.12);}
+  table.tgrid th.th-future{opacity:.65;}
+  table.tgrid th.th-today{color:var(--gold-bright); box-shadow:inset 0 -2px 0 var(--gold);}
 
   .loading{text-align:center; padding:30px; color:var(--off-white-dim); font-size:13px;}
   .save-banner{
@@ -604,7 +607,7 @@
     <div class="card">
       <h2>Trainingsbeteiligung</h2>
       <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
-      <div class="note" style="margin-top:6px;">Alle Trainingstage (Mi &amp; Fr) erscheinen automatisch in der Tabelle. Fällt ein Training aus, tippe auf das Datum in der Kopfzeile — dann zählt der Tag nicht gegen die Serie. <span class="reset-link" id="resetTraining">Trainingstabelle leeren (z. B. alte Testdaten entfernen)</span></div>
+      <div class="note" style="margin-top:6px;">Alle Trainingstage (Mi &amp; Fr) der ganzen Saison erscheinen automatisch — mit ‹ › blätterst du. Häkchen sind erst am Trainingstag möglich. Fällt ein Training aus, tippe auf das Datum in der Kopfzeile — dann zählt der Tag nicht gegen die Serie. <span class="reset-link" id="resetTraining">Trainingstabelle leeren (z. B. alte Testdaten entfernen)</span></div>
       <div class="session-picker" id="trainingPager" style="align-items:center;"></div>
       <div class="grid-wrap" style="margin-top:12px;">
         <table class="tgrid" id="trainingGrid"></table>
@@ -1587,28 +1590,37 @@ const WD_SHORT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 function weekdayShort(ds){ return WD_SHORT[new Date(ds+"T00:00:00").getDay()]; }
 function formatShortDE(ds){ return ds.slice(8,10)+'.'+ds.slice(5,7)+'.'; }
 
-const TRAINING_COLS = 6;   // so viele Termine zeigt die Tabelle auf einmal
-let trainingPage = 0;      // 0 = neueste Termine, höher = weiter zurück
+const TRAINING_COLS = 6;      // so viele Termine zeigt die Tabelle auf einmal
+let trainingEndOverride = null; // null = Standardansicht um "heute", sonst Index (exklusiv) des letzten sichtbaren Termins
+// Alle Trainingstermine der ganzen Saison (Vergangenheit und Zukunft)
+function seasonTrainingDates(){
+  const set = new Set(allScheduledTrainingDates());
+  (training.sessions||[]).forEach(d=>set.add(d)); // Altbestand aus der manuellen Auswahl
+  return [...set].sort();
+}
 function trainingWindow(){
-  const all = pastTrainingDates();
-  const maxPage = Math.max(0, Math.ceil(all.length/TRAINING_COLS)-1);
-  if(trainingPage>maxPage) trainingPage = maxPage;
-  if(trainingPage<0) trainingPage = 0;
-  const end = all.length - trainingPage*TRAINING_COLS;
-  const start = Math.max(0, end-TRAINING_COLS);
-  return {all, maxPage, sessions: all.slice(start, end)};
+  const all = seasonTrainingDates();
+  const todayStr = dstr(new Date());
+  let lastPast = -1;
+  all.forEach((d,i)=>{ if(d<=todayStr) lastPast = i; });
+  // Standard: die letzten vergangenen Termine plus die nächsten 2 kommenden
+  const baseEnd = Math.min(all.length, lastPast + 1 + 2);
+  let end = trainingEndOverride===null ? baseEnd : trainingEndOverride;
+  end = Math.max(Math.min(TRAINING_COLS, all.length), Math.min(all.length, end));
+  const start = Math.max(0, end - TRAINING_COLS);
+  return {all, start, end, sessions: all.slice(start, end), todayStr};
 }
 function renderTrainingPager(){
   const el = document.getElementById('trainingPager');
   if(!el) return;
-  const {all, maxPage, sessions} = trainingWindow();
-  if(all.length===0){ el.innerHTML = '<div class="empty">Noch kein Training im Zeitraum.</div>'; return; }
-  const olderOff = trainingPage>=maxPage, newerOff = trainingPage<=0;
+  const {all, start, end, sessions} = trainingWindow();
+  if(all.length===0){ el.innerHTML = '<div class="empty">Kein Training im Zeitraum.</div>'; return; }
+  const olderOff = start<=0, newerOff = end>=all.length;
   el.innerHTML = `<button type="button" class="session-chip arrow" id="trainOlder" ${olderOff?'disabled style="opacity:.3"':''}>‹</button>
     <span style="flex:1; text-align:center; font-family:'Space Mono'; font-size:11.5px; color:var(--off-white-dim);">${formatShortDE(sessions[0])} – ${formatShortDE(sessions[sessions.length-1])}</span>
     <button type="button" class="session-chip arrow" id="trainNewer" ${newerOff?'disabled style="opacity:.3"':''}>›</button>`;
-  document.getElementById('trainOlder').addEventListener('click', ()=>{ if(trainingPage<maxPage){ trainingPage++; renderTrainingPager(); renderTrainingGrid(); } });
-  document.getElementById('trainNewer').addEventListener('click', ()=>{ if(trainingPage>0){ trainingPage--; renderTrainingPager(); renderTrainingGrid(); } });
+  document.getElementById('trainOlder').addEventListener('click', ()=>{ if(start>0){ trainingEndOverride = Math.max(TRAINING_COLS, end - TRAINING_COLS); renderTrainingPager(); renderTrainingGrid(); } });
+  document.getElementById('trainNewer').addEventListener('click', ()=>{ if(end<all.length){ trainingEndOverride = Math.min(all.length, end + TRAINING_COLS); renderTrainingPager(); renderTrainingGrid(); } });
 }
 
 // Belohnungssystem: 10x/15x/20x in Folge -> Prämie, verbunden mit der Mannschaftskasse
@@ -1703,14 +1715,16 @@ function streakReward(streak){
 
 function renderTrainingGrid(){
   const table = document.getElementById('trainingGrid');
-  const {sessions} = trainingWindow();
+  const {sessions, todayStr} = trainingWindow();
   const thead = `<tr><th class="pname-cell">Spieler</th>${sessions.map(s=>{
     const c = isTrainingCancelled(s);
-    return `<th data-cancel="${s}" class="${c?'th-cancelled':''}" title="${c?'Training wieder ansetzen':'Training absagen'}"><div>${weekdayShort(s)}</div><div>${formatShortDE(s)}</div></th>`;
+    const cls = [c?'th-cancelled':'', s===todayStr?'th-today':'', s>todayStr?'th-future':''].filter(Boolean).join(' ');
+    return `<th data-cancel="${s}" class="${cls}" title="${c?'Training wieder ansetzen':'Training absagen'}"><div>${weekdayShort(s)}</div><div>${formatShortDE(s)}</div></th>`;
   }).join('')}<th>Serie</th></tr>`;
   const rows = PLAYERS.map(p=>{
     const cells = sessions.map(s=>{
       if(isTrainingCancelled(s)) return `<td class="cell-cancel">–</td>`;
+      if(s>todayStr) return `<td class="cell-future">·</td>`; // kommende Termine: Häkchen erst am Trainingstag
       const present = training.attendance[p] && training.attendance[p][s];
       return `<td class="${present?'cell-x':'cell-empty'}" data-player="${p}" data-session="${s}">${present?'✓':'·'}</td>`;
     }).join('');
@@ -1768,7 +1782,7 @@ document.getElementById('resetTraining').addEventListener('click', async ()=>{
   training = {sessions:[], attendance:{}, paidAtStreak:{}, cancelledDates: training.cancelledDates||[]};
   logHistory('training zurückgesetzt', {player:null, amt:null, ruleTxt:'Trainingstabelle komplett geleert (alle Häkchen entfernt)', actor});
   await persistReplace(['training','history']);
-  trainingPage = 0;
+  trainingEndOverride = null;
   renderAll();
 });
 
