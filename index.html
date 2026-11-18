@@ -626,6 +626,13 @@
       <div id="rewardsList" style="margin-top:8px;"></div>
     </div>
 
+    <div class="card" id="attendCard">
+      <h2>👤 Trainingsbeteiligung pro Spieler</h2>
+      <div class="note" style="margin-top:0;">Spieler auswählen: Gesamtquote seit Saisonbeginn, Serie und Trend. Abgesagte Trainings und Termine in der Zukunft zählen nicht.</div>
+      <select id="attendPlayer" style="margin-top:8px;"></select>
+      <div id="attendDetail" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card" id="honorCard">
       <h2>🎖 Prämien-Ehrenliste <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">Serien in Folge</span></h2>
       <div class="note" style="margin-top:0;">Wer wie oft die Prämien-Stufen erreicht hat: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×</b> +20€ in Folge. Jede abgeschlossene oder laufende Serie zählt einmal pro Stufe. Abgesagte Trainings zählen nicht gegen die Serie.</div>
@@ -1784,6 +1791,57 @@ function renderHonorList(){
   }).join('');
 }
 
+// Spieler-Auswertung: Quote gesamt + Trend
+let attendSelected = null;
+const MONTH_DE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+function renderAttendPlayer(){
+  const sel = document.getElementById('attendPlayer');
+  const out = document.getElementById('attendDetail');
+  if(!sel || !out) return;
+  if(sel.options.length===0){
+    sel.innerHTML = '<option value="">– Spieler wählen –</option>' + PLAYERS.slice().sort((a,b)=>a.localeCompare(b,'de')).map(p=>`<option value="${p}">${p}</option>`).join('');
+    sel.addEventListener('change', ()=>{ attendSelected = sel.value||null; renderAttendPlayer(); });
+  }
+  sel.value = attendSelected || '';
+  if(!attendSelected){ out.innerHTML = '<div class="empty">Wähle oben einen Spieler aus.</div>'; return; }
+  const p = attendSelected;
+  const todayStr = dstr(new Date());
+  const sessions = pastTrainingDates().filter(d=>!isTrainingCancelled(d) && !(d===todayStr && !(training.attendance[p]&&training.attendance[p][d])));
+  const att = d => !!(training.attendance[p] && training.attendance[p][d]);
+  const total = sessions.length, present = sessions.filter(att).length;
+  const pct = total ? Math.round(present/total*100) : 0;
+  const lastN = 5;
+  const recent = sessions.slice(-lastN), before = sessions.slice(-2*lastN, -lastN);
+  const rate = a => a.length ? a.filter(att).length/a.length*100 : null;
+  const rR = rate(recent), rB = rate(before);
+  let trend = '<span style="color:var(--off-white-dim)">noch zu wenig Daten</span>';
+  if(rR!==null && rB!==null){
+    const diff = Math.round(rR-rB);
+    if(diff>=10) trend = `<span style="color:var(--sage-bright)">▲ steigend (+${diff} Pkt.)</span>`;
+    else if(diff<=-10) trend = `<span style="color:var(--crimson-bright)">▼ fallend (${diff} Pkt.)</span>`;
+    else trend = `<span style="color:var(--gold-bright)">► stabil (${diff>0?'+':''}${diff} Pkt.)</span>`;
+  }
+  const runs = streakRuns(p);
+  const best = runs.length ? Math.max(...runs) : 0;
+  const months = {};
+  sessions.forEach(d=>{ const k=d.slice(0,7); (months[k]=months[k]||{t:0,a:0}); months[k].t++; if(att(d)) months[k].a++; });
+  const bars = Object.keys(months).sort().map(k=>{
+    const m=months[k], pc=Math.round(m.a/m.t*100);
+    return `<div class="stat-row"><div class="stat-label"><span>${MONTH_DE[parseInt(k.slice(5,7))-1]} ${k.slice(0,4)}</span><span class="val">${m.a}/${m.t} · ${pc}%</span></div><div class="stat-bar-track"><div class="stat-bar-fill sage" style="width:${pc}%"></div></div></div>`;
+  }).join('');
+  const lastDots = sessions.slice(-10).map(d=>`<span title="${formatShortDE(d)}" style="display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; border-radius:4px; margin-right:3px; font-size:11px; background:${att(d)?'rgba(76,154,114,.25)':'rgba(193,68,60,.25)'}; color:${att(d)?'var(--sage-bright)':'var(--crimson-bright)'};">${att(d)?'✓':'✗'}</span>`).join('');
+  out.innerHTML = `
+    <div class="stat-kpis">
+      <div class="stat-kpi"><div class="n">${pct}%</div><div class="l">Quote gesamt</div></div>
+      <div class="stat-kpi"><div class="n">${present}/${total}</div><div class="l">Trainings</div></div>
+      <div class="stat-kpi"><div class="n">${currentStreak(p)}×</div><div class="l">Serie aktuell</div></div>
+    </div>
+    <div class="note" style="margin-top:0;">Trend (letzte ${lastN} Trainings: ${rR===null?'–':Math.round(rR)+'%'} · davor: ${rB===null?'–':Math.round(rB)+'%'}): ${trend}<br>Bester Lauf in Folge: <b style="color:var(--off-white)">${best}×</b></div>
+    <div style="margin:10px 0 4px; font-size:12px; color:var(--off-white-dim);">Letzte 10 Trainings (älteste links)</div>
+    <div>${lastDots || '–'}</div>
+    <div style="margin-top:12px;">${bars || '<div class="empty">Noch keine Trainingsdaten.</div>'}</div>`;
+}
+
 function renderFormTable(){
   const entries = PLAYERS.map(p=>[p, currentStreak(p)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
   renderRankTable('formTable', entries, '×');
@@ -1974,6 +2032,7 @@ function renderAll(){
   renderBulkImport();
   renderRewardsCard();
   renderHonorList();
+  renderAttendPlayer();
   renderWorldChampTable();
   renderFormTable();
   renderHistorie();
