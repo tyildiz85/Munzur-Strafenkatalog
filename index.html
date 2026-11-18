@@ -604,6 +604,12 @@
 
   <!-- ================= TRAINING ================= -->
   <div class="panel" id="panel-training">
+    <div class="card" id="bulkImportCard" style="display:none;">
+      <h2>📋 Teilnehmer übernehmen</h2>
+      <div class="note" style="margin-top:0;" id="bulkImportNote"></div>
+      <button class="btn" id="bulkImportBtn">Alle Teilnehmer eintragen</button>
+    </div>
+
     <div class="card">
       <h2>Trainingsbeteiligung</h2>
       <div class="note" style="margin-top:0;">Tippe auf eine Zelle, um Anwesenheit (✓) für diesen Termin ein-/auszutragen. Die letzte Spalte zeigt die aktuelle Serie in Folge und die Prämien-Stufe: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×+</b> +20€.</div>
@@ -618,6 +624,12 @@
       <h2>🎖 Prämien fällig</h2>
       <div class="note" style="margin-top:0;">Automatisch berechnet aus der aktuellen Trainingsserie (10× +5€ · 15× +10€ · 20× +20€). Ein Klick verbucht die Gutschrift direkt in der Mannschaftskasse.</div>
       <div id="rewardsList" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card" id="honorCard">
+      <h2>🎖 Prämien-Ehrenliste <span style="font-family:Inter; font-size:11px; text-transform:none; color:var(--off-white-dim); margin-left:auto;">Serien in Folge</span></h2>
+      <div class="note" style="margin-top:0;">Wer wie oft die Prämien-Stufen erreicht hat: <b style="color:var(--gold-bright)">10×</b> +5€ · <b style="color:var(--gold-bright)">15×</b> +10€ · <b style="color:var(--sage-bright)">20×</b> +20€ in Folge. Jede abgeschlossene oder laufende Serie zählt einmal pro Stufe. Abgesagte Trainings zählen nicht gegen die Serie.</div>
+      <div id="honorList" style="margin-top:8px;"></div>
     </div>
 
     <div class="card">
@@ -1654,6 +1666,38 @@ function totalAttendanceCount(player){
   if(!att) return 0;
   return Object.values(att).filter(Boolean).length;
 }
+// ---------- SAMMEL-EINTRAGUNG: Teilnehmer eines Trainings auf einmal eintragen ----------
+// Einmalig: Training am 09.09.2026 (Teilnehmer laut Aufstellung). Wird nach dem Eintragen ausgeblendet.
+const BULK_ATTENDANCE = [
+  {date:'2026-09-09', players:['Muhamed','Amin','Imad','Erencan','Ayoub','Mazlum','Jaime','Riccardo','Samir K.','Burak','Akin','Doguhan','Orel','Oguzhan','Baris','Tiago','Ismail']},
+  {date:'2026-09-16', players:['Muhamed','Amin','Imad','Erencan','Ayoub','Mazlum','Tiago','Samir K.','Burak','Jaime','Akin','Doguhan','Samir M.','Ismail','Baris','Francesco','Nouri','Riccardo']},
+];
+function renderBulkImport(){
+  const card = document.getElementById('bulkImportCard');
+  const note = document.getElementById('bulkImportNote');
+  const btn = document.getElementById('bulkImportBtn');
+  if(!card) return;
+  const open = BULK_ATTENDANCE.filter(b=> !(training.bulkApplied && training.bulkApplied[b.date]));
+  if(open.length===0){ card.style.display='none'; return; }
+  const b = open[0];
+  const missing = b.players.filter(p=> !(training.attendance[p] && training.attendance[p][b.date]));
+  card.style.display = 'block';
+  note.innerHTML = `Training am <b style="color:var(--off-white)">${formatDateDE(b.date)}</b>: ${b.players.length} Teilnehmer laut Aufstellung (${b.players.join(', ')}). Ein Klick trägt alle gemeinsam ein und protokolliert es in der Historie.`;
+  btn.onclick = async ()=>{
+    const actor = await pickActor('Wer trägt die Teilnehmer ein?', `Training am ${formatDateDE(b.date)} · ${missing.length} Spieler`);
+    if(!actor) return;
+    missing.forEach(p=>{
+      if(!training.attendance[p]) training.attendance[p] = {};
+      training.attendance[p][b.date] = true;
+      logHistory('training eingetragen', {player:p, amt:null, ruleTxt:`Training am ${formatDateDE(b.date)} (Sammel-Eintragung)`, actor});
+    });
+    if(!training.bulkApplied) training.bulkApplied = {};
+    training.bulkApplied[b.date] = true;
+    await saveTraining();
+    renderAll();
+  };
+}
+
 function renderRewardsCard(){
   const card = document.getElementById('rewardsCard');
   const list = document.getElementById('rewardsList');
@@ -1702,6 +1746,44 @@ function renderWorldChampTable(){
   const entries = PLAYERS.map(p=>[p, totalAttendanceCount(p)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
   renderRankTable('worldChampTable', entries, '×');
 }
+// Ehrenliste: wie oft hat jeder Spieler 10x/15x/20x in Folge erreicht (alle Serien der Saison)
+function streakRuns(player){
+  const todayStr = dstr(new Date());
+  const sessions = pastTrainingDates().filter(x=>!isTrainingCancelled(x));
+  const runs = []; let cur = 0;
+  sessions.forEach(d=>{
+    const present = training.attendance[player] && training.attendance[player][d];
+    if(present) cur++;
+    else if(d===todayStr) { /* heute noch offen: neutral */ }
+    else { if(cur>0) runs.push(cur); cur = 0; }
+  });
+  if(cur>0) runs.push(cur);
+  return runs;
+}
+function renderHonorList(){
+  const el = document.getElementById('honorList');
+  if(!el) return;
+  const rows = PLAYERS.map(p=>{
+    const runs = streakRuns(p);
+    const counts = REWARD_TIERS.map(t=> runs.filter(r=>r>=t.n).length);
+    const cur = currentStreak(p);
+    const prem = fines.filter(f=>f.player===p && f.cat==='Prämie' && !f.cancelled).reduce((s,f)=>s+(-f.amt),0);
+    return {p, counts, cur, best: runs.length?Math.max(...runs):0, prem};
+  }).filter(r=> r.counts.some(c=>c>0) || r.cur>=5)
+    .sort((a,b)=> (b.counts[2]-a.counts[2]) || (b.counts[1]-a.counts[1]) || (b.counts[0]-a.counts[0]) || (b.cur-a.cur));
+  if(rows.length===0){ el.innerHTML = '<div class="empty">Noch niemand mit einer Serie ab 5× in Folge.</div>'; return; }
+  el.innerHTML = rows.map(r=>{
+    const chips = REWARD_TIERS.map((t,i)=> r.counts[i]>0 ? `<span class="chip mahn">${t.n}× in Folge: ${r.counts[i]}×</span>` : '').join(' ');
+    const next = REWARD_TIERS.find(t=>r.cur<t.n);
+    const prog = next ? `Aktuell ${r.cur}× · noch ${next.n-r.cur} bis ${next.n}×` : `Aktuell ${r.cur}× · alle Stufen erreicht`;
+    return `<div class="agenda-item" style="flex-direction:column; align-items:flex-start; gap:4px;">
+      <span>🎖 <b style="color:var(--off-white)">${r.p}</b> <span style="color:var(--off-white-dim); font-size:12px;">· bester Lauf ${r.best}×${r.prem>0?` · Prämien erhalten ${r.prem.toString().replace('.',',')} €`:''}</span></span>
+      <span>${chips || '<span style="color:var(--off-white-dim); font-size:12px;">noch keine Stufe erreicht</span>'}</span>
+      <span style="color:var(--off-white-dim); font-size:12px;">${prog}</span>
+    </div>`;
+  }).join('');
+}
+
 function renderFormTable(){
   const entries = PLAYERS.map(p=>[p, currentStreak(p)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
   renderRankTable('formTable', entries, '×');
@@ -1889,7 +1971,9 @@ function renderAll(){
   renderRecentFines();
   renderTrainingGrid();
   renderTrainingPager();
+  renderBulkImport();
   renderRewardsCard();
+  renderHonorList();
   renderWorldChampTable();
   renderFormTable();
   renderHistorie();
